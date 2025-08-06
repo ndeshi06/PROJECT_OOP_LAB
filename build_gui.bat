@@ -162,9 +162,28 @@ if %ERRORLEVEL% neq 0 goto :error
 
 echo.
 echo ========================================
+echo Copying DLL files...
+echo ========================================
+
+:: Copy wxWidgets DLL files from dll folder to build directory
+if exist dll (
+    echo Copying wxWidgets DLL files...
+    copy dll\*.dll %BUILD_DIR%\ >nul
+    if %ERRORLEVEL% neq 0 (
+        echo WARNING: Failed to copy some DLL files
+    ) else (
+        echo DLL files copied successfully
+    )
+) else (
+    echo WARNING: dll folder not found, DLL files not copied
+)
+
+echo.
+echo ========================================
 echo GUI Build completed successfully!
 echo ========================================
 echo Executable: %BUILD_DIR%\BadmintonCourtManagerGUI.exe
+echo DLL files: Copied to %BUILD_DIR%\
 echo.
 echo To run the GUI application:
 echo   cd build
