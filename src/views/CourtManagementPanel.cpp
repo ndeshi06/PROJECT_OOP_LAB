@@ -6,10 +6,7 @@
 #include <wx/msgdlg.h>
 #include <wx/statbox.h>
 
-wxBEGIN_EVENT_TABLE        } catch (const std::exception& e) {
-        wxMessageBox("Error saving: " + wxString(e.what()), "Error", 
-                    wxOK | wxICON_ERROR);
-    }rtManagementPanel, wxPanel)
+wxBEGIN_EVENT_TABLE(CourtManagementPanel, wxPanel)
     EVT_BUTTON(ID_ADD_COURT, CourtManagementPanel::OnAddCourt)
     EVT_BUTTON(ID_EDIT_COURT, CourtManagementPanel::OnEditCourt)
     EVT_BUTTON(ID_DELETE_COURT, CourtManagementPanel::OnDeleteCourt)
@@ -242,7 +239,7 @@ void CourtManagementPanel::OnSave(wxCommandEvent& event)
         UpdateButtonStates();
         
     } catch (const std::exception& e) {
-        wxMessageBox("Lỗi khi lưu: " + wxString(e.what()), "Lỗi", 
+        wxMessageBox("Error saving: " + wxString(e.what()), "Error", 
                     wxOK | wxICON_ERROR);
     }
 }

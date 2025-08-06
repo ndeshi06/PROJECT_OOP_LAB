@@ -1,17 +1,6 @@
 #include "../include/StatisticsPanel.h"
-#include "../include/BookingCo    summaryGrid->Add(new wxStaticText(this, wxID_ANY, "Total Revenue:"));
-    m_totalRevenueLabel = new wxStaticText(this, wxID_ANY, "0 VND");
-    summaryGrid->Add(m_totalRevenueLabel);
-    
-    summaryGrid->Add(new wxStaticText(this, wxID_ANY, "Total Bookings:"));
-    m_totalBookingsLabel = new wxStaticText(this, wxID_ANY, "0");
-    summaryGrid->Add(m_totalBookingsLabel);
-    
-    summaryGrid->Add(new wxStaticText(this, wxID_ANY, "Total Usage Hours:"));
-    m_totalHoursLabel = new wxStaticText(this, wxID_ANY, "0");
-    summaryGrid->Add(m_totalHoursLabel);
-    
-    summaryGrid->Add(new wxStaticText(this, wxID_ANY, "Average Usage Rate:"));#include "../include/CourtController.h"
+#include "../include/BookingController.h"
+#include "../include/CourtController.h"
 #include "../include/AuthController.h"
 #include <wx/sizer.h>
 #include <wx/msgdlg.h>
@@ -80,16 +69,16 @@ void StatisticsPanel::CreateSummaryPanel()
     wxFlexGridSizer* summaryGrid = new wxFlexGridSizer(2, 4, 10, 20);
     
     // Labels
-    summaryGrid->Add(new wxStaticText(this, wxID_ANY, "Tổng doanh thu:"));
+    summaryGrid->Add(new wxStaticText(this, wxID_ANY, "Total Revenue:"));
     m_totalRevenueLabel = new wxStaticText(this, wxID_ANY, "0 VND");
     summaryGrid->Add(m_totalRevenueLabel);
     
-    summaryGrid->Add(new wxStaticText(this, wxID_ANY, "Tổng số đặt sân:"));
+    summaryGrid->Add(new wxStaticText(this, wxID_ANY, "Total Bookings:"));
     m_totalBookingsLabel = new wxStaticText(this, wxID_ANY, "0");
     summaryGrid->Add(m_totalBookingsLabel);
     
-    summaryGrid->Add(new wxStaticText(this, wxID_ANY, "Tổng giờ sử dụng:"));
-    m_totalHoursLabel = new wxStaticText(this, wxID_ANY, "0 giờ");
+    summaryGrid->Add(new wxStaticText(this, wxID_ANY, "Total Usage Hours:"));
+    m_totalHoursLabel = new wxStaticText(this, wxID_ANY, "0 hours");
     summaryGrid->Add(m_totalHoursLabel);
     
     summaryGrid->Add(new wxStaticText(this, wxID_ANY, "Average Usage Rate:"));
@@ -106,11 +95,11 @@ void StatisticsPanel::CreateDetailsPanel()
     m_statsListCtrl = new wxListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
                                     wxLC_REPORT | wxLC_SINGLE_SEL);
     
-    m_statsListCtrl->AppendColumn("Sân", wxLIST_FORMAT_LEFT, 100);
-    m_statsListCtrl->AppendColumn("Số lần đặt", wxLIST_FORMAT_RIGHT, 100);
-    m_statsListCtrl->AppendColumn("Giờ sử dụng", wxLIST_FORMAT_RIGHT, 100);
-    m_statsListCtrl->AppendColumn("Doanh thu", wxLIST_FORMAT_RIGHT, 120);
-    m_statsListCtrl->AppendColumn("Tỷ lệ sử dụng", wxLIST_FORMAT_RIGHT, 100);
+    m_statsListCtrl->AppendColumn("Court", wxLIST_FORMAT_LEFT, 100);
+    m_statsListCtrl->AppendColumn("Bookings", wxLIST_FORMAT_RIGHT, 100);
+    m_statsListCtrl->AppendColumn("Usage Hours", wxLIST_FORMAT_RIGHT, 100);
+    m_statsListCtrl->AppendColumn("Revenue", wxLIST_FORMAT_RIGHT, 120);
+    m_statsListCtrl->AppendColumn("Usage Rate", wxLIST_FORMAT_RIGHT, 100);
     
     m_detailsSizer->Add(m_statsListCtrl, 1, wxEXPAND | wxALL, 5);
     
@@ -154,7 +143,7 @@ void StatisticsPanel::GenerateStatistics()
     // For now, just show placeholder data
     m_totalRevenueLabel->SetLabel("2,500,000 VND");
     m_totalBookingsLabel->SetLabel("45");
-    m_totalHoursLabel->SetLabel("180 giờ");
+    m_totalHoursLabel->SetLabel("180 hours");
     m_averageUsageLabel->SetLabel("75%");
     
     PopulateStatsList();
@@ -165,21 +154,21 @@ void StatisticsPanel::PopulateStatsList()
     m_statsListCtrl->DeleteAllItems();
     
     // Add sample data
-    long index = m_statsListCtrl->InsertItem(0, "Sân 1");
+    long index = m_statsListCtrl->InsertItem(0, "Court 1");
     m_statsListCtrl->SetItem(index, 1, "15");
-    m_statsListCtrl->SetItem(index, 2, "60 giờ");
+    m_statsListCtrl->SetItem(index, 2, "60 hours");
     m_statsListCtrl->SetItem(index, 3, "900,000 VND");
     m_statsListCtrl->SetItem(index, 4, "80%");
     
-    index = m_statsListCtrl->InsertItem(1, "Sân 2");
+    index = m_statsListCtrl->InsertItem(1, "Court 2");
     m_statsListCtrl->SetItem(index, 1, "12");
-    m_statsListCtrl->SetItem(index, 2, "48 giờ");
+    m_statsListCtrl->SetItem(index, 2, "48 hours");
     m_statsListCtrl->SetItem(index, 3, "720,000 VND");
     m_statsListCtrl->SetItem(index, 4, "65%");
     
-    index = m_statsListCtrl->InsertItem(2, "Sân 3");
+    index = m_statsListCtrl->InsertItem(2, "Court 3");
     m_statsListCtrl->SetItem(index, 1, "18");
-    m_statsListCtrl->SetItem(index, 2, "72 giờ");
+    m_statsListCtrl->SetItem(index, 2, "72 hours");
     m_statsListCtrl->SetItem(index, 3, "880,000 VND");
     m_statsListCtrl->SetItem(index, 4, "85%");
 }
@@ -197,5 +186,5 @@ wxString StatisticsPanel::FormatCurrency(double amount)
 
 wxString StatisticsPanel::FormatDuration(int hours)
 {
-    return wxString::Format("%d giờ", hours);
+    return wxString::Format("%d hours", hours);
 }
