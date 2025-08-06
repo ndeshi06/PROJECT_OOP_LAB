@@ -11,8 +11,8 @@ set INCLUDE_DIR=src\include
 set WXWIN=%~dp0wxWidgets-3.2.8
 echo Using wxWidgets at: %WXWIN%
 
-:: Compiler flags for wxWidgets - Using DLL version that was built
-set CXX_FLAGS=-std=c++17 -Wall -O2 -mwindows
+:: Compiler flags for wxWidgets - Using DLL version that was built (warnings disabled)
+set CXX_FLAGS=-std=c++17 -w -O2 -mwindows
 set WX_CXXFLAGS=-I%WXWIN%\include -I%WXWIN%\lib\gcc_dll\mswu -D__WXMSW__ -DWXUSINGDLL
 set INCLUDE_FLAGS=-I%INCLUDE_DIR%
 
