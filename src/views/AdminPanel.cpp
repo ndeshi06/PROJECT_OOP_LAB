@@ -278,24 +278,30 @@ void AdminPanel::RefreshStatistics()
         
         int totalBookings = 0;
         int activeBookings = 0;
+        int cancelledBookings = 0;
         double totalRevenue = 0.0;
         
         for (const auto& booking : allBookings) {
             if (!booking) continue;
             
-            totalBookings++;
-            
-            if (booking->isActive()) {
-                activeBookings++;
-            }
-            
-            if (booking->getStatus() == BookingStatus::CONFIRMED || 
-                booking->getStatus() == BookingStatus::COMPLETED) {
-                totalRevenue += booking->getTotalAmount();
+            // Only count non-cancelled bookings in total
+            if (booking->getStatus() != BookingStatus::CANCELLED) {
+                totalBookings++;
+                
+                if (booking->isActive()) {
+                    activeBookings++;
+                }
+                
+                if (booking->getStatus() == BookingStatus::CONFIRMED || 
+                    booking->getStatus() == BookingStatus::COMPLETED) {
+                    totalRevenue += booking->getTotalAmount();
+                }
+            } else {
+                cancelledBookings++;
             }
         }
         
-        m_totalBookingsLabel->SetLabel(wxString::Format("Total Bookings: %d", totalBookings));
+        m_totalBookingsLabel->SetLabel(wxString::Format("Total Bookings: %d (Cancelled: %d)", totalBookings, cancelledBookings));
         m_totalRevenueLabel->SetLabel(wxString::Format("Total Revenue: %s", FormatCurrency(totalRevenue)));
         m_activeBookingsLabel->SetLabel(wxString::Format("Active Bookings: %d", activeBookings));
         

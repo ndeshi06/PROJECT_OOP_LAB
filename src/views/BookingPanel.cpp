@@ -85,7 +85,7 @@ void BookingPanel::CreateBookingForm()
     // Add help text for time selection
     formGrid->Add(new wxStaticText(this, wxID_ANY, ""), 0); // Empty cell
     wxStaticText* helpText = new wxStaticText(this, wxID_ANY, 
-        "💡 Tip: Click on available time slots below to auto-select times");
+        "Tip: Click on available time slots below to auto-select times");
     helpText->SetForegroundColour(wxColour(100, 100, 100));
     formGrid->Add(helpText, 0, wxALIGN_LEFT);
     
@@ -153,10 +153,10 @@ void BookingPanel::CreateAvailabilityDisplay()
 
 void BookingPanel::CreateMyBookingsDisplay()
 {
-    m_myBookingsSizer = new wxStaticBoxSizer(wxVERTICAL, this, "My Bookings");
+    m_myBookingsSizer = new wxStaticBoxSizer(wxVERTICAL, this, "Booking History");
     
     m_userBookingsList = new wxListCtrl(this, ID_BOOKING_LIST,
-                                       wxDefaultPosition, wxSize(-1, 200),
+                                       wxDefaultPosition, wxSize(-1, 250),
                                        wxLC_REPORT | wxLC_SINGLE_SEL);
     
     m_userBookingsList->AppendColumn("ID", wxLIST_FORMAT_RIGHT, 50);
@@ -172,14 +172,14 @@ void BookingPanel::CreateMyBookingsDisplay()
     wxBoxSizer* managementSizer = new wxBoxSizer(wxHORIZONTAL);
     m_cancelBookingBtn = new wxButton(this, ID_CANCEL_BOOKING, "Cancel");
     m_modifyBookingBtn = new wxButton(this, ID_MODIFY_BOOKING, "Modify");
-    m_refreshBookingsBtn = new wxButton(this, ID_REFRESH_BOOKINGS, "Refresh");
+    m_refreshBookingsBtn = new wxButton(this, ID_REFRESH_BOOKINGS, "Refresh History");
     
     managementSizer->Add(m_cancelBookingBtn, 0, wxRIGHT, 5);
     managementSizer->Add(m_modifyBookingBtn, 0, wxRIGHT, 5);
     managementSizer->Add(m_refreshBookingsBtn, 0);
     
     m_myBookingsSizer->Add(managementSizer, 0, wxALL | wxALIGN_CENTER, 5);
-    m_mainSizer->Add(m_myBookingsSizer, 1, wxEXPAND | wxALL, 10);
+    m_mainSizer->Add(m_myBookingsSizer, 2, wxEXPAND | wxALL, 10);
     
     // Initially disable booking management buttons
     UpdateButtonStates();
@@ -267,7 +267,7 @@ void BookingPanel::RefreshMyBookings()
         if (userBookings.empty()) {
             // Show message if no bookings found
             long index = m_userBookingsList->InsertItem(0, "Info");
-            m_userBookingsList->SetItem(index, 1, "No bookings");
+            m_userBookingsList->SetItem(index, 1, "No booking history");
             m_userBookingsList->SetItem(index, 2, "You haven't made any bookings yet");
             m_userBookingsList->SetItem(index, 3, "Click 'Book Court' to make your first booking");
             m_userBookingsList->SetItem(index, 4, "");
@@ -275,7 +275,7 @@ void BookingPanel::RefreshMyBookings()
             return;
         }
         
-        // Display actual bookings
+        // Display all bookings (including cancelled ones for history)
         for (size_t i = 0; i < userBookings.size(); ++i) {
             auto booking = userBookings[i];
             if (!booking) continue;
@@ -569,26 +569,73 @@ void BookingPanel::OnCancelBooking(wxCommandEvent& event)
 {
     if (m_selectedBookingId == -1) {
         wxMessageBox("Please select a booking to cancel!\n\n"
-                    "Click on a booking from the list below to select it.",
+                    "Click on a booking from the history list below to select it.",
                     "No Booking Selected", 
                     wxOK | wxICON_WARNING, this);
         return;
     }
     
-    // Show detailed confirmation dialog
-    int result = wxMessageBox("Are you sure you want to cancel this booking?\n\n"
-                             "This action cannot be undone.\n"
-                             "You may be charged a cancellation fee depending on the timing.",
-                             "Confirm Booking Cancellation",
-                             wxYES_NO | wxICON_QUESTION, this);
+    // Check if booking can be cancelled
+    if (!m_bookingController || !m_authController) {
+        wxMessageBox("System error: Controllers not available!", 
+                    "Error", wxOK | wxICON_ERROR, this);
+        return;
+    }
     
-    if (result == wxYES) {
-        try {
-            // Actually cancel the booking through controller
-            if (m_bookingController && m_bookingController->cancelBooking(m_selectedBookingId)) {
-                // Show detailed success message
+    try {
+        auto userBookings = m_bookingController->getUserBookings(
+            m_authController->getCurrentUser()->getId()
+        );
+        
+        std::shared_ptr<Booking> selectedBooking = nullptr;
+        for (const auto& booking : userBookings) {
+            if (booking && booking->getId() == m_selectedBookingId) {
+                selectedBooking = booking;
+                break;
+            }
+        }
+        
+        if (!selectedBooking) {
+            wxMessageBox("Selected booking not found!", 
+                        "Error", wxOK | wxICON_ERROR, this);
+            return;
+        }
+        
+        // Check if booking can be cancelled
+        if (selectedBooking->getStatus() == BookingStatus::CANCELLED) {
+            wxMessageBox("This booking has already been cancelled!", 
+                        "Already Cancelled", wxOK | wxICON_WARNING, this);
+            return;
+        }
+        
+        if (selectedBooking->getStatus() == BookingStatus::COMPLETED) {
+            wxMessageBox("Cannot cancel a completed booking!", 
+                        "Cannot Cancel", wxOK | wxICON_WARNING, this);
+            return;
+        }
+        
+        // Show detailed confirmation dialog
+        wxString confirmMsg = wxString::Format(
+            "Are you sure you want to cancel this booking?\n\n"
+            "Booking ID: %d\n"
+            "Court: %s\n"
+            "Date: %s\n"
+            "Status: %s\n\n"
+            "This action cannot be undone.\n"
+            "You may be charged a cancellation fee depending on the timing.",
+            selectedBooking->getId(),
+            wxString::Format("Court %d", selectedBooking->getCourtId()),
+            wxDateTime(selectedBooking->getBookingDate()).Format("%Y-%m-%d"),
+            selectedBooking->getStatusString()
+        );
+        
+        int result = wxMessageBox(confirmMsg, "Confirm Booking Cancellation",
+                                 wxYES_NO | wxICON_QUESTION, this);
+        
+        if (result == wxYES) {
+            if (m_bookingController->cancelBooking(m_selectedBookingId)) {
                 wxMessageBox("Booking cancelled successfully!\n\n"
-                            "Your booking has been removed from the system.\n"
+                            "Your booking has been cancelled and moved to history.\n"
                             "If you paid in advance, refund processing will begin within 3-5 business days.\n\n"
                             "Thank you for using our service!",
                             "Cancellation Confirmed", 
@@ -600,20 +647,21 @@ void BookingPanel::OnCancelBooking(wxCommandEvent& event)
             } else {
                 wxMessageBox("Failed to cancel booking!\n\n"
                             "The booking may have already been cancelled or may not exist.\n"
-                            "Please refresh the list and try again.",
+                            "Please refresh the history and try again.",
                             "Cancellation Failed", 
                             wxOK | wxICON_ERROR, this);
             }
-        } catch (const std::exception& e) {
-            wxString errorMsg = wxString::Format(
-                "Failed to cancel booking!\n\n"
-                "Error: %s\n\n"
-                "Please try again or contact support.\n"
-                "Your booking is still active until successfully cancelled.",
-                e.what()
-            );
-            wxMessageBox(errorMsg, "Cancellation Error", wxOK | wxICON_ERROR, this);
         }
+        
+    } catch (const std::exception& e) {
+        wxString errorMsg = wxString::Format(
+            "Failed to cancel booking!\n\n"
+            "Error: %s\n\n"
+            "Please try again or contact support.\n"
+            "Your booking status remains unchanged.",
+            e.what()
+        );
+        wxMessageBox(errorMsg, "Cancellation Error", wxOK | wxICON_ERROR, this);
     }
 }
 
@@ -626,7 +674,7 @@ void BookingPanel::OnCheckAvailability(wxCommandEvent& event)
 void BookingPanel::OnRefreshBookings(wxCommandEvent& event)
 {
     RefreshData();
-    wxMessageBox("Data refreshed!", "Information", wxOK | wxICON_INFORMATION);
+    wxMessageBox("Booking history refreshed!", "Information", wxOK | wxICON_INFORMATION);
 }
 
 void BookingPanel::OnModifyBooking(wxCommandEvent& event)
@@ -885,8 +933,36 @@ void BookingPanel::ClearBookingForm()
 void BookingPanel::UpdateButtonStates()
 {
     bool hasSelection = (m_selectedBookingId != -1);
-    m_cancelBookingBtn->Enable(hasSelection);
-    m_modifyBookingBtn->Enable(hasSelection);
+    bool canCancel = false;
+    bool canModify = false;
+    
+    if (hasSelection && m_bookingController) {
+        try {
+            // Get the selected booking to check its status
+            auto userBookings = m_bookingController->getUserBookings(
+                m_authController->getCurrentUser()->getId()
+            );
+            
+            for (const auto& booking : userBookings) {
+                if (booking && booking->getId() == m_selectedBookingId) {
+                    // Can only cancel if booking is PENDING or CONFIRMED
+                    canCancel = (booking->getStatus() == BookingStatus::PENDING || 
+                               booking->getStatus() == BookingStatus::CONFIRMED);
+                    
+                    // Can modify if booking is PENDING
+                    canModify = (booking->getStatus() == BookingStatus::PENDING);
+                    break;
+                }
+            }
+        } catch (const std::exception& e) {
+            // If error, disable buttons
+            canCancel = false;
+            canModify = false;
+        }
+    }
+    
+    m_cancelBookingBtn->Enable(canCancel);
+    m_modifyBookingBtn->Enable(canModify);
 }
 
 void BookingPanel::SavePendingChanges()

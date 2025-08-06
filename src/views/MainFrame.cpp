@@ -26,7 +26,7 @@ MainFrame::MainFrame(std::shared_ptr<AuthController> authController,
                      std::shared_ptr<CourtController> courtController,
                      std::shared_ptr<BookingController> bookingController)
     : wxFrame(nullptr, wxID_ANY, "Badminton Court Management System", 
-              wxDefaultPosition, wxSize(1200, 800)),
+              wxDefaultPosition, wxSize(1200, 900)),
       m_authController(authController),
       m_courtController(courtController),
       m_bookingController(bookingController),
