@@ -7,8 +7,8 @@ set BUILD_DIR=build
 set OBJ_DIR=build\obj
 set INCLUDE_DIR=src\include
 
-:: Using wxWidgets installation at C:\wxWidgets-3.2.8
-set WXWIN=C:\wxWidgets-3.2.8
+:: Using local wxWidgets installation in project
+set WXWIN=%~dp0wxWidgets-3.2.8
 echo Using wxWidgets at: %WXWIN%
 
 :: Compiler flags for wxWidgets - Using DLL version that was built
@@ -18,6 +18,7 @@ set INCLUDE_FLAGS=-I%INCLUDE_DIR%
 
 :: Linker flags for wxWidgets - Using DLL libraries with correct names
 set WX_LIBS=-L%WXWIN%\lib\gcc_dll -lwxmsw32u_core_gcc_custom -lwxbase32u_gcc_custom -lwxmsw32u_adv_gcc_custom
+
 
 :: Windows system libraries required for wxWidgets
 set SYS_LIBS=-lkernel32 -luser32 -lgdi32 -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -luuid -lcomctl32 -lwsock32 -lodbc32

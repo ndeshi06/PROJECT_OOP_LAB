@@ -211,7 +211,7 @@ void BookingPanel::RefreshMyBookings()
             m_userBookingsList->SetItem(index, 4, booking->getStatusString());
             
             // Cost
-            m_userBookingsList->SetItem(index, 5, FormatCurrency(booking->getTotalCost()));
+            m_userBookingsList->SetItem(index, 5, FormatCurrency(booking->getTotalAmount()));
             
             // Store booking ID in item data
             m_userBookingsList->SetItemData(index, booking->getId());
@@ -343,11 +343,6 @@ void BookingPanel::OnCancelBooking(wxCommandEvent& event)
                 "Error: %s\n\n"
                 "Please try again or contact support.\n"
                 "Your booking is still active until successfully cancelled.",
-                e.what()
-            );
-            wxMessageBox(errorMsg, "Cancellation Error", wxOK | wxICON_ERROR, this);
-        }
-    }
                 e.what()
             );
             wxMessageBox(errorMsg, "Cancellation Error", wxOK | wxICON_ERROR, this);
