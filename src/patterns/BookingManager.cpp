@@ -10,6 +10,7 @@ BookingManager& BookingManager::getInstance() {
     std::lock_guard<std::mutex> lock(m_mutex);
     if (m_instance == nullptr) {
         m_instance = std::unique_ptr<BookingManager>(new BookingManager());
+        m_instance->loadBookings(); // Load data on first instantiation
     }
     return *m_instance;
 }
@@ -34,6 +35,9 @@ bool BookingManager::createBooking(const Booking& booking) {
     // Sort by date
     sortBookingsByDate();
     
+    // Save changes immediately
+    saveBookings();
+    
     // Notify observers
     notifyObservers("Booking created", newBooking);
     
@@ -48,6 +52,7 @@ bool BookingManager::cancelBooking(int bookingId) {
     
     if (it != m_bookings.end()) {
         (*it)->setStatus(BookingStatus::CANCELLED);
+        saveBookings(); // Save changes immediately
         notifyObservers("Booking cancelled", **it);
         return true;
     }
@@ -80,6 +85,7 @@ bool BookingManager::modifyBooking(int bookingId, const Booking& newBooking) {
             return false;
         }
         
+        saveBookings(); // Save changes immediately
         notifyObservers("Booking modified", **it);
         return true;
     }

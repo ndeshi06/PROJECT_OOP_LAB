@@ -44,6 +44,12 @@ if not exist "%WXWIN%\include\wx" (
     exit /b 1
 )
 
+:: Clean build directory if it exists
+if exist build (
+    echo Cleaning existing build directory...
+    rmdir /s /q build
+)
+
 :: Create build directory
 if not exist build mkdir build
 if not exist build\obj mkdir build\obj
@@ -197,8 +203,6 @@ echo.
 echo ========================================
 echo BUILD FAILED!
 echo ========================================
-echo Check the error messages above.
-echo Make sure wxWidgets is properly installed at C:\wxWidgets-3.2.8
 pause
 exit /b 1
 

@@ -3,10 +3,14 @@
 #include <memory>
 
 class AuthController;
+class CourtController;
+class BookingController;
 
 class LoginFrame : public wxFrame {
 private:
     std::shared_ptr<AuthController> m_authController;
+    std::shared_ptr<CourtController> m_courtController;
+    std::shared_ptr<BookingController> m_bookingController;
     
     // UI components
     wxPanel* m_mainPanel;
@@ -23,7 +27,9 @@ private:
     wxBoxSizer* m_buttonSizer;
 
 public:
-    LoginFrame(std::shared_ptr<AuthController> authController);
+    LoginFrame(std::shared_ptr<AuthController> authController,
+               std::shared_ptr<CourtController> courtController = nullptr,
+               std::shared_ptr<BookingController> bookingController = nullptr);
     ~LoginFrame();
 
     // Event handlers
@@ -31,12 +37,14 @@ public:
     void OnRegister(wxCommandEvent& event);
     void OnClose(wxCloseEvent& event);
     void OnExit(wxCommandEvent& event);
+    
+    // Public methods
+    void ClearForm();
 
 private:
     void CreateUI();
     void CreateMenuBar();
     void BindEvents();
-    void ClearForm();
     bool ValidateInput();
     void ShowMessage(const wxString& message, bool isError = false);
     void OpenMainWindow();
@@ -48,5 +56,5 @@ private:
 enum {
     ID_LOGIN = 1000,
     ID_REGISTER,
-    ID_ROLE_CHOICE
+    ID_LOGIN_ROLE_CHOICE
 };

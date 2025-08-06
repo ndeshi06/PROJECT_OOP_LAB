@@ -55,6 +55,10 @@ BookingPtr BookingController::getBooking(int bookingId) const {
     return m_bookingManager.getBooking(bookingId);
 }
 
+std::vector<BookingPtr> BookingController::getAllBookings() const {
+    return m_bookingManager.getAllBookings();
+}
+
 std::vector<BookingPtr> BookingController::getUserBookings(int userId) const {
     return m_bookingManager.getBookingsByUser(userId);
 }

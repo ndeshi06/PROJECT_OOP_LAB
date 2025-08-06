@@ -106,8 +106,8 @@ void CourtManagementPanel::CreateDetailsPanel()
     detailsGrid->Add(new wxStaticText(this, wxID_ANY, "Status:"), 0, wxALIGN_CENTER_VERTICAL);
     m_statusChoice = new wxChoice(this, wxID_ANY);
     m_statusChoice->Append("Available");
-    m_statusChoice->Append("In Use");
     m_statusChoice->Append("Maintenance");
+    m_statusChoice->Append("Out of Service");
     detailsGrid->Add(m_statusChoice, 0, wxEXPAND);
     
     detailsGrid->AddGrowableCol(1);
@@ -191,12 +191,16 @@ void CourtManagementPanel::OnDeleteCourt(wxCommandEvent& event)
     
     if (result == wxYES) {
         try {
-            // For now, just refresh the list
-            m_selectedCourtId = -1;
-            RefreshCourtList();
-            ClearDetailsPanel();
-            UpdateButtonStates();
-            wxMessageBox("Court deleted successfully!", "Information", wxOK | wxICON_INFORMATION);
+            // Actually delete the court through controller
+            if (m_courtController && m_courtController->deleteCourt(m_selectedCourtId)) {
+                m_selectedCourtId = -1;
+                RefreshCourtList();
+                ClearDetailsPanel();
+                UpdateButtonStates();
+                wxMessageBox("Court deleted successfully!", "Success", wxOK | wxICON_INFORMATION);
+            } else {
+                wxMessageBox("Failed to delete court!", "Error", wxOK | wxICON_ERROR);
+            }
         } catch (const std::exception& e) {
             wxMessageBox("Error deleting court: " + wxString(e.what()), "Error", 
                         wxOK | wxICON_ERROR);
@@ -224,12 +228,41 @@ void CourtManagementPanel::OnSave(wxCommandEvent& event)
         double rate = 0.0;
         rateStr.ToDouble(&rate);
         
+        // Get selected status
+        CourtStatus status = CourtStatus::AVAILABLE;
+        int statusSelection = m_statusChoice->GetSelection();
+        switch (statusSelection) {
+            case 0:
+                status = CourtStatus::AVAILABLE;
+                break;
+            case 1:
+                status = CourtStatus::MAINTENANCE;
+                break;
+            case 2:
+                status = CourtStatus::OUT_OF_SERVICE;
+                break;
+            default:
+                status = CourtStatus::AVAILABLE;
+                break;
+        }
+        
         if (m_isEditing) {
             // Update existing court
-            wxMessageBox("Court information updated!", "Information", wxOK | wxICON_INFORMATION);
+            Court updatedCourt(name.ToStdString(), description.ToStdString(), rate, status);
+            if (m_courtController && m_courtController->updateCourt(m_selectedCourtId, updatedCourt)) {
+                wxMessageBox("Court information updated successfully!", "Success", wxOK | wxICON_INFORMATION);
+            } else {
+                wxMessageBox("Failed to update court information!", "Error", wxOK | wxICON_ERROR);
+                return;
+            }
         } else {
             // Add new court
-            wxMessageBox("New court added!", "Information", wxOK | wxICON_INFORMATION);
+            if (m_courtController && m_courtController->addCourt(name.ToStdString(), description.ToStdString(), rate, status)) {
+                wxMessageBox("New court added successfully!", "Success", wxOK | wxICON_INFORMATION);
+            } else {
+                wxMessageBox("Failed to add new court! Court name may already exist.", "Error", wxOK | wxICON_ERROR);
+                return;
+            }
         }
         
         RefreshCourtList();
@@ -258,7 +291,8 @@ void CourtManagementPanel::OnCourtSelected(wxListEvent& event)
 {
     long item = event.GetIndex();
     if (item != -1) {
-        m_selectedCourtId = item + 1; // Simple ID mapping
+        // Get the real court ID from the item data
+        m_selectedCourtId = m_courtList->GetItemData(item);
         LoadCourtDetails(m_selectedCourtId);
         UpdateButtonStates();
     }
@@ -273,11 +307,36 @@ void CourtManagementPanel::OnCourtDeselected(wxListEvent& event)
 
 void CourtManagementPanel::LoadCourtDetails(int courtId)
 {
-    // Load sample data for now
-    m_nameCtrl->SetValue(wxString::Format("Court %d", courtId));
-    m_descriptionCtrl->SetValue("High quality badminton court");
-    m_rateCtrl->SetValue("50000");
-    m_statusChoice->SetSelection(0);
+    if (!m_courtController) {
+        ClearDetailsPanel();
+        return;
+    }
+    
+    // Get real court data from controller
+    auto court = m_courtController->getCourt(courtId);
+    if (court) {
+        m_nameCtrl->SetValue(court->getName());
+        m_descriptionCtrl->SetValue(court->getDescription());
+        m_rateCtrl->SetValue(wxString::Format("%.0f", court->getHourlyRate()));
+        
+        // Set status selection
+        switch (court->getStatus()) {
+            case CourtStatus::AVAILABLE:
+                m_statusChoice->SetSelection(0);
+                break;
+            case CourtStatus::MAINTENANCE:
+                m_statusChoice->SetSelection(1);
+                break;
+            case CourtStatus::OUT_OF_SERVICE:
+                m_statusChoice->SetSelection(2);
+                break;
+            default:
+                m_statusChoice->SetSelection(0);
+                break;
+        }
+    } else {
+        ClearDetailsPanel();
+    }
 }
 
 void CourtManagementPanel::ClearDetailsPanel()
@@ -333,13 +392,49 @@ void CourtManagementPanel::PopulateCourtList()
 {
     m_courtList->DeleteAllItems();
     
-    // Add sample courts
-    for (int i = 1; i <= 3; i++) {
-        long index = m_courtList->InsertItem(i-1, wxString::Format("%d", i));
-        m_courtList->SetItem(index, 1, wxString::Format("Court %d", i));
-        m_courtList->SetItem(index, 2, "Standard");
-        m_courtList->SetItem(index, 3, FormatCurrency(50000));
-        m_courtList->SetItem(index, 4, "Available");
+    if (!m_courtController) {
+        return;
+    }
+    
+    // Get real courts from controller
+    auto courts = m_courtController->getAllCourts();
+    
+    int itemIndex = 0;
+    for (const auto& court : courts) {
+        if (!court) continue;
+        
+        long index = m_courtList->InsertItem(itemIndex, wxString::Format("%d", court->getId()));
+        m_courtList->SetItem(index, 1, court->getName());
+        m_courtList->SetItem(index, 2, court->getDescription());
+        m_courtList->SetItem(index, 3, FormatCurrency(court->getHourlyRate()));
+        
+        // Convert status to string
+        wxString statusStr = "Available";
+        switch (court->getStatus()) {
+            case CourtStatus::AVAILABLE:
+                statusStr = "Available";
+                break;
+            case CourtStatus::MAINTENANCE:
+                statusStr = "Maintenance";
+                break;
+            case CourtStatus::OUT_OF_SERVICE:
+                statusStr = "Out of Service";
+                break;
+        }
+        m_courtList->SetItem(index, 4, statusStr);
+        
+        // Store the real court ID in the item data
+        m_courtList->SetItemData(index, court->getId());
+        itemIndex++;
+    }
+    
+    // If no courts available, show message
+    if (courts.empty()) {
+        long index = m_courtList->InsertItem(0, "No courts");
+        m_courtList->SetItem(index, 1, "No courts available");
+        m_courtList->SetItem(index, 2, "Add courts using the Add button");
+        m_courtList->SetItem(index, 3, "");
+        m_courtList->SetItem(index, 4, "");
     }
 }
 

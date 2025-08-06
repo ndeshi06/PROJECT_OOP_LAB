@@ -1,14 +1,17 @@
 #include "MainFrame.h"
+#include "BadmintonApp.h"
 #include "CourtManagementPanel.h"
 #include "BookingPanel.h"
 #include "StatisticsPanel.h"
 #include "UserManagementPanel.h"
+#include "LoginFrame.h"
 #include "../include/AuthController.h"
 #include "../include/CourtController.h"
 #include "../include/BookingController.h"
 #include <wx/sizer.h>
 #include <wx/msgdlg.h>
 #include <wx/notebook.h>
+#include <wx/toplevel.h>
 
 // Event table
 wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
@@ -79,9 +82,17 @@ void MainFrame::CreateStatusBar()
     m_statusBar = wxFrame::CreateStatusBar(2);
     SetStatusText("Ready", 0);
     
-    // Show current user
+    // Show current user info
     if (m_authController && m_authController->getCurrentUser()) {
-        wxString userInfo = "User: " + m_authController->getCurrentUser()->getUsername();
+        auto user = m_authController->getCurrentUser();
+        wxString roleStr = "UNKNOWN";
+        switch(user->getRole()) {
+            case UserRole::ADMIN: roleStr = "ADMIN"; break;
+            case UserRole::STAFF: roleStr = "STAFF"; break;
+            case UserRole::CUSTOMER: roleStr = "CUSTOMER"; break;
+        }
+        wxString userInfo = wxString::Format("User: %s (%s)", 
+                                           user->getUsername(), roleStr);
         SetStatusText(userInfo, 1);
     }
 }
@@ -96,26 +107,43 @@ void MainFrame::CreateNotebook()
         currentRole = m_authController->getCurrentUser()->getRole();
     }
     
-    // Booking Panel - Available to all users
-    m_bookingPanel = new BookingPanel(m_notebook, m_bookingController, m_courtController, m_authController);
-    m_notebook->AddPage(m_bookingPanel, "Booking", true);
-    
-    // Court Management Panel - Only for ADMIN and STAFF
-    if (currentRole == UserRole::ADMIN || currentRole == UserRole::STAFF) {
+    // For ADMIN: Show management tabs first, no booking tab needed
+    if (currentRole == UserRole::ADMIN) {
+        // User Management Panel - Primary tab for ADMIN
+        m_userPanel = new UserManagementPanel(m_notebook, m_authController);
+        m_notebook->AddPage(m_userPanel, "User Management", true); // Set as default tab
+        
+        // Court Management Panel
         m_courtPanel = new CourtManagementPanel(m_notebook, m_courtController, m_authController);
         m_notebook->AddPage(m_courtPanel, "Court Management");
-    }
-    
-    // User Management Panel - Only for ADMIN
-    if (currentRole == UserRole::ADMIN) {
-        m_userPanel = new UserManagementPanel(m_notebook, m_authController);
-        m_notebook->AddPage(m_userPanel, "User Management");
-    }
-    
-    // Statistics Panel - Only for ADMIN and STAFF
-    if (currentRole == UserRole::ADMIN || currentRole == UserRole::STAFF) {
+        
+        // Statistics Panel
         m_statisticsPanel = new StatisticsPanel(m_notebook, m_bookingController, m_courtController, m_authController);
         m_notebook->AddPage(m_statisticsPanel, "Statistics");
+        
+        // Optional: Add booking panel for admin if needed (commented out by default)
+        // m_bookingPanel = new BookingPanel(m_notebook, m_bookingController, m_courtController, m_authController);
+        // m_notebook->AddPage(m_bookingPanel, "Booking");
+    }
+    // For STAFF: Show court management and booking
+    else if (currentRole == UserRole::STAFF) {
+        // Court Management Panel - Primary tab for STAFF
+        m_courtPanel = new CourtManagementPanel(m_notebook, m_courtController, m_authController);
+        m_notebook->AddPage(m_courtPanel, "Court Management", true); // Set as default tab
+        
+        // Booking Panel
+        m_bookingPanel = new BookingPanel(m_notebook, m_bookingController, m_courtController, m_authController);
+        m_notebook->AddPage(m_bookingPanel, "Booking");
+        
+        // Statistics Panel
+        m_statisticsPanel = new StatisticsPanel(m_notebook, m_bookingController, m_courtController, m_authController);
+        m_notebook->AddPage(m_statisticsPanel, "Statistics");
+    }
+    // For CUSTOMER: Only booking
+    else {
+        // Booking Panel - Only tab for CUSTOMER
+        m_bookingPanel = new BookingPanel(m_notebook, m_bookingController, m_courtController, m_authController);
+        m_notebook->AddPage(m_bookingPanel, "Booking", true);
     }
 }
 
@@ -126,13 +154,13 @@ void MainFrame::BindEvents()
 
 void MainFrame::OnExit(wxCommandEvent& event)
 {
-    Close(true);
+    wxExit();
 }
 
 void MainFrame::OnAbout(wxCommandEvent& event)
 {
-    wxMessageBox("Hệ thống quản lý sân cầu lông\n"
-                 "Phiên bản 1.0\n"
+    wxMessageBox("Badminton Management System\n"
+                 "Version 1.0\n"
                  "Developed with C++ and wxWidgets\n\n"
                  "Features:\n"
                  "- Badminton court management\n"
@@ -152,17 +180,34 @@ void MainFrame::OnLogout(wxCommandEvent& event)
                              this);
     
     if (result == wxYES) {
-        if (m_authController) {
-            m_authController->logout();
+        // Use app method to handle logout
+        BadmintonApp* app = BadmintonApp::GetInstance();
+        if (app) {
+            app->OnLogout();
         }
-        Close(true);
     }
 }
 
 void MainFrame::OnClose(wxCloseEvent& event)
 {
-    // Save any pending changes before closing
-    event.Skip();
+    // Only exit if user explicitly wants to close the app
+    if (event.CanVeto()) {
+        int result = wxMessageBox("Do you want to exit the application?",
+                                 "Confirm Exit",
+                                 wxYES_NO | wxICON_QUESTION,
+                                 this);
+        if (result == wxNO) {
+            event.Veto();
+            return;
+        }
+    }
+    
+    // Exit the application safely
+    Destroy();
+    // Only exit main loop if this is the last window
+    if (wxTopLevelWindows.GetCount() <= 1) {
+        wxTheApp->ExitMainLoop();
+    }
 }
 
 void MainFrame::RefreshAllPanels()
@@ -185,14 +230,22 @@ void MainFrame::RefreshAllPanels()
 void MainFrame::UpdateUserInterface()
 {
     if (m_authController && m_authController->getCurrentUser()) {
-        wxString userInfo = "User: " + m_authController->getCurrentUser()->getUsername();
+        auto user = m_authController->getCurrentUser();
+        wxString roleStr = "UNKNOWN";
+        switch(user->getRole()) {
+            case UserRole::ADMIN: roleStr = "ADMIN"; break;
+            case UserRole::STAFF: roleStr = "STAFF"; break;
+            case UserRole::CUSTOMER: roleStr = "CUSTOMER"; break;
+        }
+        wxString userInfo = wxString::Format("User: %s (%s)", 
+                                           user->getUsername(), roleStr);
         SetStatusText(userInfo, 1);
     }
 }
 
 void MainFrame::UpdateStatusBar()
 {
-    SetStatusText("Sẵn sàng", 0);
+    SetStatusText("Ready", 0);
 }
 
 void MainFrame::ShowUserInfo()

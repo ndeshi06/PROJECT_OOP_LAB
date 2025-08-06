@@ -19,10 +19,12 @@ bool User::validatePassword(const std::string& password) const {
 std::string User::getRoleString() const {
     switch (m_role) {
         case UserRole::ADMIN:
-            return "Administrator";
+            return "ADMIN";
+        case UserRole::STAFF:
+            return "STAFF";
         case UserRole::CUSTOMER:
-            return "Customer";
+            return "CUSTOMER";
         default:
-            return "Unknown";
+            return "CUSTOMER";
     }
 }

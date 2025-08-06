@@ -1,5 +1,9 @@
 #include <wx/wx.h>
+#include <wx/app.h>
+#include <wx/event.h>
+#include "BadmintonApp.h"
 #include "LoginFrame.h"
+#include "MainFrame.h"
 #include "AuthController.h"
 #include "CourtController.h"
 #include "BookingController.h"
@@ -7,29 +11,13 @@
 #include "NotificationObserver.h"
 #include <memory>
 
-class BadmintonApp : public wxApp {
-private:
-    std::shared_ptr<AuthController> m_authController;
-    std::shared_ptr<CourtController> m_courtController;
-    std::shared_ptr<BookingController> m_bookingController;
-    std::shared_ptr<EmailNotificationObserver> m_emailObserver;
-    std::shared_ptr<InAppNotificationObserver> m_inAppObserver;
-
-public:
-    virtual bool OnInit();
-    virtual int OnExit();
-
-private:
-    void InitializeControllers();
-    void SetupNotifications();
-    void LoadInitialData();
-};
-
 wxIMPLEMENT_APP(BadmintonApp);
 
 bool BadmintonApp::OnInit() {
     // Set UTF-8 encoding for proper Vietnamese character display
     wxLocale::GetSystemLanguage();
+    
+    SetExitOnFrameDelete(false);
     
     // Initialize controllers
     InitializeControllers();
@@ -40,9 +28,8 @@ bool BadmintonApp::OnInit() {
     // Load initial data
     LoadInitialData();
     
-    // Create and show login frame
-    LoginFrame* loginFrame = new LoginFrame(m_authController);
-    loginFrame->Show(true);
+    // Start with login frame
+    ShowLoginFrame();
     
     return true;
 }
@@ -84,20 +71,11 @@ void BadmintonApp::SetupNotifications() {
 
 void BadmintonApp::LoadInitialData() {
     // Load data from files/database
-    m_authController->loadUsers();
     m_courtController->loadCourts();
     BookingManager::getInstance().loadBookings();
     
-    // Create default admin user if no users exist
-    if (m_authController->getAllUsers().empty()) {
-        m_authController->registerUser(
-            "admin@badminton.com", 
-            "admin123", 
-            "System Administrator", 
-            "0123456789", 
-            UserRole::ADMIN
-        );
-    }
+    // Note: Default admin user creation is handled in AuthController constructor
+    // No need to create admin here as it would cause duplicates
     
     // Create default courts if none exist
     if (m_courtController->getAllCourts().empty()) {
@@ -105,4 +83,44 @@ void BadmintonApp::LoadInitialData() {
         m_courtController->addCourt("Court 2", "Premium badminton court", 75000.0);
         m_courtController->addCourt("Court 3", "VIP badminton court", 100000.0);
     }
+}
+
+void BadmintonApp::ShowLoginFrame() {
+    // Store current window to close after creating new one
+    wxTopLevelWindow* oldWindow = dynamic_cast<wxTopLevelWindow*>(GetTopWindow());
+    
+    // Create and show login frame
+    LoginFrame* loginFrame = new LoginFrame(m_authController, m_courtController, m_bookingController);
+    loginFrame->Show(true);
+    SetTopWindow(loginFrame);
+    
+    // Close the old window after new one is shown
+    if (oldWindow && oldWindow != loginFrame) {
+        // Prevent the old window from vetoing the close
+        oldWindow->Close(true); // Force close without veto
+    }
+}
+
+void BadmintonApp::ShowMainFrame() {
+    // Store current window to close after creating new one
+    wxTopLevelWindow* oldWindow = dynamic_cast<wxTopLevelWindow*>(GetTopWindow());
+    
+    // Create and show main frame
+    MainFrame* mainFrame = new MainFrame(m_authController, m_courtController, m_bookingController);
+    mainFrame->Show(true);
+    SetTopWindow(mainFrame);
+    
+    // Close the old window after new one is shown
+    if (oldWindow && oldWindow != mainFrame) {
+        // Prevent the old window from vetoing the close
+        oldWindow->Close(true); // Force close without veto
+    }
+}
+
+void BadmintonApp::OnLogout() {
+    // Logout from auth controller
+    m_authController->logout();
+    
+    // Show login frame again
+    ShowLoginFrame();
 }

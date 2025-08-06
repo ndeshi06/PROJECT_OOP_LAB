@@ -176,6 +176,17 @@ void UserManagementPanel::OnDeleteUser(wxCommandEvent& event)
         return;
     }
     
+    // Check if trying to delete current user (self)
+    auto currentUser = m_authController->getCurrentUser();
+    if (currentUser && currentUser->getId() == m_selectedUserId) {
+        wxMessageBox("You cannot delete your own account!\n\n"
+                    "To delete your account, please ask another administrator "
+                    "to do it for you.", 
+                    "Cannot Delete Own Account", 
+                    wxOK | wxICON_WARNING, this);
+        return;
+    }
+    
     // Get selected user info
     long selectedItem = m_userList->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
     if (selectedItem == -1) return;
@@ -220,6 +231,17 @@ void UserManagementPanel::OnChangeRole(wxCommandEvent& event)
     if (m_selectedUserId == -1) {
         wxMessageBox("Please select a user to change role!", 
                     "No User Selected", wxOK | wxICON_WARNING, this);
+        return;
+    }
+    
+    // Check if trying to change role of current user (self)
+    auto currentUser = m_authController->getCurrentUser();
+    if (currentUser && currentUser->getId() == m_selectedUserId) {
+        wxMessageBox("You cannot change your own role!\n\n"
+                    "To change your role, please ask another administrator "
+                    "to do it for you.", 
+                    "Cannot Change Own Role", 
+                    wxOK | wxICON_WARNING, this);
         return;
     }
     
@@ -278,6 +300,17 @@ void UserManagementPanel::OnToggleStatus(wxCommandEvent& event)
     if (m_selectedUserId == -1) {
         wxMessageBox("Please select a user to enable/disable!", 
                     "No User Selected", wxOK | wxICON_WARNING, this);
+        return;
+    }
+    
+    // Check if trying to disable current user (self)
+    auto currentUser = m_authController->getCurrentUser();
+    if (currentUser && currentUser->getId() == m_selectedUserId) {
+        wxMessageBox("You cannot disable your own account!\n\n"
+                    "To disable your account, please ask another administrator "
+                    "to do it for you.", 
+                    "Cannot Disable Own Account", 
+                    wxOK | wxICON_WARNING, this);
         return;
     }
     

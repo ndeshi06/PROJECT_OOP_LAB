@@ -6,6 +6,44 @@
 #include <filesystem>
 
 AuthController::AuthController() : m_currentUser(nullptr) {
+    loadUsers();
+    
+    // Clean up any duplicate admin@badminton.com entries first
+    std::vector<std::shared_ptr<User>> adminDuplicates;
+    for (auto it = m_users.begin(); it != m_users.end();) {
+        if ((*it) && (*it)->getEmail() == "admin@badminton.com") {
+            adminDuplicates.push_back(*it);
+            it = m_users.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    
+    // Check if we have any admin user at all after cleanup
+    bool hasAnyAdmin = false;
+    for (const auto& user : m_users) {
+        if (user && user->getRole() == UserRole::ADMIN) {
+            hasAnyAdmin = true;
+            break;
+        }
+    }
+    
+    // Create default admin user only if NO admin exists at all
+    if (!hasAnyAdmin) {
+        // Create new admin with correct role
+        auto defaultAdmin = std::make_shared<User>("admin@badminton.com", 
+                                                  hashPassword("admin123"), 
+                                                  "Administrator", 
+                                                  "0123456789", 
+                                                  UserRole::ADMIN);
+        defaultAdmin->setId(generateUserId());
+        m_users.push_back(defaultAdmin);
+        saveUsers();
+    } else if (!adminDuplicates.empty()) {
+        // If we had admin duplicates but still have other admins, just keep one clean copy
+        m_users.push_back(adminDuplicates[0]); // Keep only the first one
+        saveUsers();
+    }
 }
 
 AuthController::~AuthController() {
@@ -46,6 +84,7 @@ bool AuthController::registerUser(const std::string& email, const std::string& p
     newUser->setId(generateUserId());
     
     m_users.push_back(newUser);
+    saveUsers(); // Save changes immediately
     return true;
 }
 
@@ -87,6 +126,7 @@ bool AuthController::updateUser(int userId, const User& updatedUser) {
     user->setRole(updatedUser.getRole());
     user->setActive(updatedUser.isActive());
     
+    saveUsers(); // Save changes immediately
     return true;
 }
 
@@ -181,9 +221,14 @@ void AuthController::loadUsers() {
                     user->setPhoneNumber(tokens[4]);
                     
                     // Parse role
-                    UserRole role = UserRole::CUSTOMER;
-                    if (tokens[5] == "ADMIN") role = UserRole::ADMIN;
-                    else if (tokens[5] == "STAFF") role = UserRole::STAFF;
+                    UserRole role = UserRole::CUSTOMER; // Default
+                    if (tokens[5] == "ADMIN") {
+                        role = UserRole::ADMIN;
+                    } else if (tokens[5] == "STAFF") {
+                        role = UserRole::STAFF;
+                    } else if (tokens[5] == "CUSTOMER") {
+                        role = UserRole::CUSTOMER;
+                    }
                     user->setRole(role);
                     
                     user->setActive(tokens[6] == "1");

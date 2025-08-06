@@ -22,6 +22,7 @@ public:
     
     // Booking retrieval
     BookingPtr getBooking(int bookingId) const;
+    std::vector<BookingPtr> getAllBookings() const;
     std::vector<BookingPtr> getUserBookings(int userId) const;
     std::vector<BookingPtr> getCourtBookings(int courtId) const;
     std::vector<BookingPtr> getBookingsByDate(std::time_t date) const;

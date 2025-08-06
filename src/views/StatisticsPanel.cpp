@@ -140,11 +140,45 @@ void StatisticsPanel::UpdateStatistics()
 
 void StatisticsPanel::GenerateStatistics()
 {
-    // For now, just show placeholder data
-    m_totalRevenueLabel->SetLabel("2,500,000 VND");
-    m_totalBookingsLabel->SetLabel("45");
-    m_totalHoursLabel->SetLabel("180 hours");
-    m_averageUsageLabel->SetLabel("75%");
+    if (!m_bookingController || !m_courtController) {
+        // No controllers available, show zero data
+        m_totalRevenueLabel->SetLabel("0 VND");
+        m_totalBookingsLabel->SetLabel("0");
+        m_totalHoursLabel->SetLabel("0 hours");
+        m_averageUsageLabel->SetLabel("0%");
+        return;
+    }
+    
+    // Get actual data from controllers
+    auto bookings = m_bookingController->getAllBookings();
+    auto courts = m_courtController->getAllCourts();
+    
+    // Calculate real statistics
+    double totalRevenue = 0.0;
+    int totalBookings = bookings.size();
+    double totalHours = 0.0;
+    
+    for (const auto& booking : bookings) {
+        if (booking) {
+            totalRevenue += booking->getTotalAmount();
+            // Calculate duration in hours (simplified)
+            double duration = (booking->getEndTime() - booking->getStartTime()) / 3600.0; // seconds to hours
+            totalHours += duration;
+        }
+    }
+    
+    // Calculate average usage (simplified)
+    double averageUsage = 0.0;
+    if (!courts.empty() && totalHours > 0) {
+        double totalPossibleHours = courts.size() * 24 * 30; // Courts * hours per day * days per month
+        averageUsage = (totalHours / totalPossibleHours) * 100;
+    }
+    
+    // Display real data
+    m_totalRevenueLabel->SetLabel(wxString::Format("%.0f VND", totalRevenue));
+    m_totalBookingsLabel->SetLabel(wxString::Format("%d", totalBookings));
+    m_totalHoursLabel->SetLabel(wxString::Format("%.1f hours", totalHours));
+    m_averageUsageLabel->SetLabel(wxString::Format("%.1f%%", averageUsage));
     
     PopulateStatsList();
 }
@@ -153,24 +187,55 @@ void StatisticsPanel::PopulateStatsList()
 {
     m_statsListCtrl->DeleteAllItems();
     
-    // Add sample data
-    long index = m_statsListCtrl->InsertItem(0, "Court 1");
-    m_statsListCtrl->SetItem(index, 1, "15");
-    m_statsListCtrl->SetItem(index, 2, "60 hours");
-    m_statsListCtrl->SetItem(index, 3, "900,000 VND");
-    m_statsListCtrl->SetItem(index, 4, "80%");
+    if (!m_courtController || !m_bookingController) {
+        return;
+    }
     
-    index = m_statsListCtrl->InsertItem(1, "Court 2");
-    m_statsListCtrl->SetItem(index, 1, "12");
-    m_statsListCtrl->SetItem(index, 2, "48 hours");
-    m_statsListCtrl->SetItem(index, 3, "720,000 VND");
-    m_statsListCtrl->SetItem(index, 4, "65%");
+    // Get real court and booking data
+    auto courts = m_courtController->getAllCourts();
+    auto bookings = m_bookingController->getAllBookings();
     
-    index = m_statsListCtrl->InsertItem(2, "Court 3");
-    m_statsListCtrl->SetItem(index, 1, "18");
-    m_statsListCtrl->SetItem(index, 2, "72 hours");
-    m_statsListCtrl->SetItem(index, 3, "880,000 VND");
-    m_statsListCtrl->SetItem(index, 4, "85%");
+    // Calculate statistics for each court
+    for (const auto& court : courts) {
+        if (!court) continue;
+        
+        int courtBookings = 0;
+        double courtRevenue = 0.0;
+        double courtHours = 0.0;
+        
+        // Calculate this court's statistics
+        for (const auto& booking : bookings) {
+            if (booking && booking->getCourtId() == court->getId()) {
+                courtBookings++;
+                courtRevenue += booking->getTotalAmount();
+                double duration = (booking->getEndTime() - booking->getStartTime()) / 3600.0;
+                courtHours += duration;
+            }
+        }
+        
+        // Calculate usage percentage (simplified)
+        double usage = 0.0;
+        if (courtHours > 0) {
+            double maxHours = 24 * 30; // hours per day * days per month
+            usage = (courtHours / maxHours) * 100;
+        }
+        
+        // Add to list
+        long index = m_statsListCtrl->InsertItem(m_statsListCtrl->GetItemCount(), court->getName());
+        m_statsListCtrl->SetItem(index, 1, wxString::Format("%d", courtBookings));
+        m_statsListCtrl->SetItem(index, 2, wxString::Format("%.1f hours", courtHours));
+        m_statsListCtrl->SetItem(index, 3, wxString::Format("%.0f VND", courtRevenue));
+        m_statsListCtrl->SetItem(index, 4, wxString::Format("%.1f%%", usage));
+    }
+    
+    // If no courts, show empty message
+    if (courts.empty()) {
+        long index = m_statsListCtrl->InsertItem(0, "No courts available");
+        m_statsListCtrl->SetItem(index, 1, "0");
+        m_statsListCtrl->SetItem(index, 2, "0 hours");
+        m_statsListCtrl->SetItem(index, 3, "0 VND");
+        m_statsListCtrl->SetItem(index, 4, "0%");
+    }
 }
 
 void StatisticsPanel::CalculateSummary()

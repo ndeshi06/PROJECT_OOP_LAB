@@ -10,6 +10,7 @@ class CourtManagementPanel;
 class BookingPanel;
 class StatisticsPanel;
 class UserManagementPanel;
+class LoginFrame;
 
 class MainFrame : public wxFrame {
 private:
