@@ -1,0 +1,2 @@
+1|admin@badminton.com|admin123|System Administrator|0123456789|Administrator|1|1754480486
+2|thinhqw48@gmail.com|Thinh29102006@|Do Duc Thinh|0392665466|Customer|1|1754480505

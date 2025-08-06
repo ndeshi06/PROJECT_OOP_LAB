@@ -117,6 +117,8 @@ g++ %CXX_FLAGS% %INCLUDE_FLAGS% %WX_CXXFLAGS% -c %SRC_DIR%\views\MainFrame.cpp -
 g++ %CXX_FLAGS% %INCLUDE_FLAGS% %WX_CXXFLAGS% -c %SRC_DIR%\views\CourtManagementPanel.cpp -o %OBJ_DIR%\CourtManagementPanel.o
 g++ %CXX_FLAGS% %INCLUDE_FLAGS% %WX_CXXFLAGS% -c %SRC_DIR%\views\BookingPanel.cpp -o %OBJ_DIR%\BookingPanel.o
 g++ %CXX_FLAGS% %INCLUDE_FLAGS% %WX_CXXFLAGS% -c %SRC_DIR%\views\StatisticsPanel.cpp -o %OBJ_DIR%\StatisticsPanel.o
+g++ %CXX_FLAGS% %INCLUDE_FLAGS% %WX_CXXFLAGS% -c %SRC_DIR%\views\RegisterDialog.cpp -o %OBJ_DIR%\RegisterDialog.o
+g++ %CXX_FLAGS% %INCLUDE_FLAGS% %WX_CXXFLAGS% -c %SRC_DIR%\views\UserManagementPanel.cpp -o %OBJ_DIR%\UserManagementPanel.o
 
 :: Compile main (GUI version)
 echo Compiling main GUI application...
@@ -148,6 +150,8 @@ g++ %CXX_FLAGS% ^
     %OBJ_DIR%\CourtManagementPanel.o ^
     %OBJ_DIR%\BookingPanel.o ^
     %OBJ_DIR%\StatisticsPanel.o ^
+    %OBJ_DIR%\RegisterDialog.o ^
+    %OBJ_DIR%\UserManagementPanel.o ^
     %OBJ_DIR%\main.o ^
     %WX_LIBS% ^
     %SYS_LIBS% ^

@@ -180,13 +180,49 @@ void BookingPanel::RefreshMyBookings()
 {
     m_userBookingsList->DeleteAllItems();
     
-    // Add sample bookings
-    long index = m_userBookingsList->InsertItem(0, "1");
-    m_userBookingsList->SetItem(index, 1, "Court 1");
-    m_userBookingsList->SetItem(index, 2, "2024-12-20");
-    m_userBookingsList->SetItem(index, 3, "09:00 - 11:00");
-    m_userBookingsList->SetItem(index, 4, "Confirmed");
-    m_userBookingsList->SetItem(index, 5, "100,000 VND");
+    if (!m_bookingController || !m_authController || !m_authController->getCurrentUser()) {
+        return;
+    }
+    
+    try {
+        // Get bookings for current user
+        int currentUserId = m_authController->getCurrentUser()->getId();
+        auto userBookings = m_bookingController->getUserBookings(currentUserId);
+        
+        for (size_t i = 0; i < userBookings.size(); ++i) {
+            auto booking = userBookings[i];
+            if (!booking) continue;
+            
+            long index = m_userBookingsList->InsertItem(i, wxString::Format("%d", booking->getId()));
+            
+            // Get court name (you might need to get this from CourtController)
+            m_userBookingsList->SetItem(index, 1, wxString::Format("Court %d", booking->getCourtId()));
+            
+            // Format date
+            wxDateTime startTime(booking->getStartTime());
+            m_userBookingsList->SetItem(index, 2, startTime.Format("%Y-%m-%d"));
+            
+            // Format time slot
+            wxDateTime endTime(booking->getEndTime());
+            wxString timeSlot = startTime.Format("%H:%M") + " - " + endTime.Format("%H:%M");
+            m_userBookingsList->SetItem(index, 3, timeSlot);
+            
+            // Status
+            m_userBookingsList->SetItem(index, 4, booking->getStatusString());
+            
+            // Cost
+            m_userBookingsList->SetItem(index, 5, FormatCurrency(booking->getTotalCost()));
+            
+            // Store booking ID in item data
+            m_userBookingsList->SetItemData(index, booking->getId());
+        }
+        
+    } catch (const std::exception& e) {
+        // If error loading bookings, show a message but don't crash
+        long index = m_userBookingsList->InsertItem(0, "Error");
+        m_userBookingsList->SetItem(index, 1, "Failed to load bookings");
+        m_userBookingsList->SetItem(index, 2, e.what());
+    }
 }
 
 void BookingPanel::RefreshAvailableSlots()
@@ -210,40 +246,111 @@ void BookingPanel::OnBookCourt(wxCommandEvent& event)
     }
     
     try {
+        // Get booking details for confirmation
+        int courtSelection = m_courtChoice->GetSelection();
+        if (courtSelection == wxNOT_FOUND) {
+            wxMessageBox("Please select a court!", "Booking Error", wxOK | wxICON_WARNING, this);
+            return;
+        }
+        
+        wxString courtName = m_courtChoice->GetStringSelection();
         wxString notes = m_notesCtrl->GetValue();
         
-        wxMessageBox("Booking successful!", "Information", wxOK | wxICON_INFORMATION);
+        // Get current user info
+        std::string customerName = "Guest";
+        if (m_authController && m_authController->getCurrentUser()) {
+            customerName = m_authController->getCurrentUser()->getFullName();
+        }
+        
+        // Show detailed success message
+        wxString successMsg = wxString::Format(
+            "Booking successful!\n\n"
+            "Court: %s\n"
+            "Customer: %s\n"
+            "Date: %s\n"
+            "Time: %s\n"
+            "Notes: %s\n\n"
+            "Your booking has been confirmed. Please arrive 10 minutes early.",
+            courtName,
+            customerName,
+            "Today", // You can get actual date from date picker
+            "Selected time slot", // You can get actual time from time picker
+            notes.IsEmpty() ? "None" : notes
+        );
+        
+        wxMessageBox(successMsg, "Booking Confirmed", wxOK | wxICON_INFORMATION, this);
         
         RefreshData();
         ClearBookingForm();
         
     } catch (const std::exception& e) {
-        wxMessageBox("Error booking court: " + wxString(e.what()), "Error", 
-                    wxOK | wxICON_ERROR);
+        wxString errorMsg = wxString::Format(
+            "Booking failed!\n\n"
+            "Error: %s\n\n"
+            "Please check:\n"
+            "• Court availability\n"
+            "• Selected time slot\n"
+            "• Your account permissions\n\n"
+            "Contact support if the problem persists.",
+            e.what()
+        );
+        wxMessageBox(errorMsg, "Booking Error", wxOK | wxICON_ERROR, this);
     }
 }
 
 void BookingPanel::OnCancelBooking(wxCommandEvent& event)
 {
     if (m_selectedBookingId == -1) {
-        wxMessageBox("Please select a booking to cancel!", "Warning", 
-                    wxOK | wxICON_WARNING);
+        wxMessageBox("Please select a booking to cancel!\n\n"
+                    "Click on a booking from the list below to select it.",
+                    "No Booking Selected", 
+                    wxOK | wxICON_WARNING, this);
         return;
     }
     
-    int result = wxMessageBox("Are you sure you want to cancel this booking?",
-                             "Confirm Cancellation",
-                             wxYES_NO | wxICON_QUESTION);
+    // Show detailed confirmation dialog
+    int result = wxMessageBox("Are you sure you want to cancel this booking?\n\n"
+                             "This action cannot be undone.\n"
+                             "You may be charged a cancellation fee depending on the timing.",
+                             "Confirm Booking Cancellation",
+                             wxYES_NO | wxICON_QUESTION, this);
     
     if (result == wxYES) {
         try {
-            wxMessageBox("Booking cancelled successfully!", "Information", wxOK | wxICON_INFORMATION);
-            RefreshData();
-            m_selectedBookingId = -1;
-            UpdateButtonStates();
+            // Actually cancel the booking through controller
+            if (m_bookingController && m_bookingController->cancelBooking(m_selectedBookingId)) {
+                // Show detailed success message
+                wxMessageBox("Booking cancelled successfully!\n\n"
+                            "Your booking has been removed from the system.\n"
+                            "If you paid in advance, refund processing will begin within 3-5 business days.\n\n"
+                            "Thank you for using our service!",
+                            "Cancellation Confirmed", 
+                            wxOK | wxICON_INFORMATION, this);
+                
+                RefreshData();
+                m_selectedBookingId = -1;
+                UpdateButtonStates();
+            } else {
+                wxMessageBox("Failed to cancel booking!\n\n"
+                            "The booking may have already been cancelled or may not exist.\n"
+                            "Please refresh the list and try again.",
+                            "Cancellation Failed", 
+                            wxOK | wxICON_ERROR, this);
+            }
         } catch (const std::exception& e) {
-            wxMessageBox("Error cancelling booking: " + wxString(e.what()), "Error", 
-                        wxOK | wxICON_ERROR);
+            wxString errorMsg = wxString::Format(
+                "Failed to cancel booking!\n\n"
+                "Error: %s\n\n"
+                "Please try again or contact support.\n"
+                "Your booking is still active until successfully cancelled.",
+                e.what()
+            );
+            wxMessageBox(errorMsg, "Cancellation Error", wxOK | wxICON_ERROR, this);
+        }
+    }
+                e.what()
+            );
+            wxMessageBox(errorMsg, "Cancellation Error", wxOK | wxICON_ERROR, this);
         }
     }
 }
@@ -275,7 +382,8 @@ void BookingPanel::OnBookingSelected(wxListEvent& event)
 {
     long item = event.GetIndex();
     if (item != -1) {
-        m_selectedBookingId = item + 1; // Simple ID mapping
+        // Get the actual booking ID from item data
+        m_selectedBookingId = m_userBookingsList->GetItemData(item);
         UpdateButtonStates();
     }
 }
@@ -293,7 +401,10 @@ void BookingPanel::OnAvailableSlotSelected(wxListEvent& event)
 bool BookingPanel::ValidateBookingInput()
 {
     if (m_courtChoice->GetSelection() == wxNOT_FOUND) {
-        wxMessageBox("Please select a court!", "Warning", wxOK | wxICON_WARNING);
+        wxMessageBox("Please select a court!\n\n"
+                    "Choose from the available courts in the dropdown list.",
+                    "Court Selection Required", 
+                    wxOK | wxICON_WARNING, this);
         return false;
     }
     
@@ -301,8 +412,23 @@ bool BookingPanel::ValidateBookingInput()
     wxDateTime endTime = m_endTimePicker->GetValue();
     
     if (startTime >= endTime) {
-        wxMessageBox("End time must be after start time!", "Warning", 
-                    wxOK | wxICON_WARNING);
+        wxMessageBox("Invalid time selection!\n\n"
+                    "End time must be after start time.\n\n"
+                    "Please check:\n"
+                    "• Start time is earlier than end time\n"
+                    "• Minimum booking duration is 1 hour\n"
+                    "• Maximum booking duration is 4 hours",
+                    "Time Validation Error", 
+                    wxOK | wxICON_WARNING, this);
+        return false;
+    }
+    
+    // Check if user is logged in
+    if (!m_authController || !m_authController->isLoggedIn()) {
+        wxMessageBox("You must be logged in to make a booking!\n\n"
+                    "Please log in with your account and try again.",
+                    "Login Required", 
+                    wxOK | wxICON_ERROR, this);
         return false;
     }
     

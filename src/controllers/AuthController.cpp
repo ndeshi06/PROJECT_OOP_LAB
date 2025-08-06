@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <regex>
+#include <filesystem>
 
 AuthController::AuthController() : m_currentUser(nullptr) {
 }
@@ -96,12 +97,31 @@ bool AuthController::deleteUser(int userId) {
         });
     
     if (it != m_users.end()) {
-        // Don't actually delete, just deactivate
-        (*it)->setActive(false);
+        // Actually remove the user from the list
+        m_users.erase(it);
+        saveUsers(); // Save changes immediately
         return true;
     }
     
     return false;
+}
+
+bool AuthController::changeUserRole(int userId, UserRole newRole) {
+    auto user = getUserById(userId);
+    if (!user) return false;
+    
+    user->setRole(newRole);
+    saveUsers(); // Save changes immediately
+    return true;
+}
+
+bool AuthController::toggleUserStatus(int userId) {
+    auto user = getUserById(userId);
+    if (!user) return false;
+    
+    user->setActive(!user->isActive());
+    saveUsers(); // Save changes immediately
+    return true;
 }
 
 bool AuthController::changePassword(int userId, const std::string& oldPassword, 
@@ -135,27 +155,75 @@ bool AuthController::isEmailTaken(const std::string& email) const {
 }
 
 void AuthController::loadUsers() {
-    // Placeholder implementation for loading users from file
-    // In a real application, this would read from a database or file
-    std::ifstream file("users.dat");
+    // Load users from file
+    std::ifstream file("data/users.txt");
     if (file.is_open()) {
         std::string line;
         while (std::getline(file, line)) {
-            // Parse user data from file
-            // This is a simplified implementation
+            if (line.empty()) continue;
+            
+            // Parse user data: id|email|password|fullName|phone|role|active|createdAt
+            std::stringstream ss(line);
+            std::string token;
+            std::vector<std::string> tokens;
+            
+            while (std::getline(ss, token, '|')) {
+                tokens.push_back(token);
+            }
+            
+            if (tokens.size() >= 8) {
+                try {
+                    auto user = std::make_shared<User>();
+                    user->setId(std::stoi(tokens[0]));
+                    user->setEmail(tokens[1]);
+                    user->setPassword(tokens[2]);
+                    user->setFullName(tokens[3]);
+                    user->setPhoneNumber(tokens[4]);
+                    
+                    // Parse role
+                    UserRole role = UserRole::CUSTOMER;
+                    if (tokens[5] == "ADMIN") role = UserRole::ADMIN;
+                    else if (tokens[5] == "STAFF") role = UserRole::STAFF;
+                    user->setRole(role);
+                    
+                    user->setActive(tokens[6] == "1");
+                    
+                    // Set created time (simplified)
+                    std::time_t createdAt = std::time(nullptr);
+                    if (tokens.size() > 7) {
+                        createdAt = std::stoll(tokens[7]);
+                    }
+                    
+                    m_users.push_back(user);
+                } catch (const std::exception& e) {
+                    // Skip invalid lines
+                    continue;
+                }
+            }
         }
         file.close();
     }
 }
 
 void AuthController::saveUsers() {
-    // Placeholder implementation for saving users to file
-    // In a real application, this would write to a database or file
-    std::ofstream file("users.dat");
+    // Create data directory if it doesn't exist
+    std::filesystem::create_directories("data");
+    
+    // Save users to file
+    std::ofstream file("data/users.txt");
     if (file.is_open()) {
         for (const auto& user : m_users) {
-            // Write user data to file
-            // This is a simplified implementation
+            if (!user) continue;
+            
+            // Write user data: id|email|password|fullName|phone|role|active|createdAt
+            file << user->getId() << "|"
+                 << user->getEmail() << "|"
+                 << user->getPassword() << "|"
+                 << user->getFullName() << "|"
+                 << user->getPhoneNumber() << "|"
+                 << user->getRoleString() << "|"
+                 << (user->isActive() ? "1" : "0") << "|"
+                 << user->getCreatedAt() << std::endl;
         }
         file.close();
     }

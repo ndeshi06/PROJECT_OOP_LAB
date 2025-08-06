@@ -31,6 +31,8 @@ public:
     UserPtr getUserByEmail(const std::string& email) const;
     bool updateUser(int userId, const User& updatedUser);
     bool deleteUser(int userId);
+    bool changeUserRole(int userId, UserRole newRole);
+    bool toggleUserStatus(int userId);
     bool changePassword(int userId, const std::string& oldPassword, 
                        const std::string& newPassword);
 

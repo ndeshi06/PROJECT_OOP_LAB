@@ -5,6 +5,7 @@
 
 enum class UserRole {
     ADMIN,
+    STAFF,
     CUSTOMER
 };
 

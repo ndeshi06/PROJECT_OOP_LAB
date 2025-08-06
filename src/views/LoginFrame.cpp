@@ -1,5 +1,6 @@
 #include "LoginFrame.h"
 #include "../include/AuthController.h"
+#include "../include/RegisterDialog.h"
 #include "../include/MainFrame.h"
 #include "../include/CourtController.h"
 #include "../include/BookingController.h"
@@ -128,47 +129,81 @@ void LoginFrame::OnLogin(wxCommandEvent& event)
         std::string password = m_passwordCtrl->GetValue().ToStdString();
         
         if (m_authController->login(email, password)) {
-            ShowMessage("Login successful!");
-
+            // Show success message with dialog
+            wxMessageBox("Login successful! Welcome to the Badminton Court Management System.", 
+                        "Login Success", 
+                        wxOK | wxICON_INFORMATION, 
+                        this);
+            
             // Hide login window and open main window
             Hide();
             OpenMainWindow();
         } else {
-            ShowMessage("Invalid email or password!", true);
+            // Show error message with dialog
+            wxMessageBox("Login failed! Please check your email and password.\n\n" 
+                        "Make sure:\n"
+                        "• Email address is correct\n"
+                        "• Password is correct\n"
+                        "• Account exists and is active", 
+                        "Login Failed", 
+                        wxOK | wxICON_ERROR, 
+                        this);
+            
+            // Clear password field for security
+            m_passwordCtrl->Clear();
+            m_passwordCtrl->SetFocus();
         }
     } catch (const std::exception& e) {
         wxString errorMsg = wxString::Format("Login error: %s", e.what());
-        ShowMessage(errorMsg, true);
+        wxMessageBox(errorMsg, "System Error", wxOK | wxICON_ERROR, this);
     }
 }
 
 void LoginFrame::OnRegister(wxCommandEvent& event)
 {
-    if (!ValidateInput()) {
-        return;
-    }
-    
     try {
-        std::string email = m_emailCtrl->GetValue().ToStdString();
-        std::string password = m_passwordCtrl->GetValue().ToStdString();
-        std::string roleStr;
+        RegisterDialog dialog(this);
         
-        switch (m_roleChoice->GetSelection()) {
-            case 0: roleStr = "ADMIN"; break;
-            case 1: roleStr = "STAFF"; break;
-            case 2: roleStr = "CUSTOMER"; break;
-            default: roleStr = "CUSTOMER"; break;
-        }
-        
-        if (m_authController->registerUser(email, password, email, roleStr)) {
-            ShowMessage("Registration successful! Please log in.");
-            ClearForm();
-        } else {
-            ShowMessage("Email already exists!", true);
+        if (dialog.ShowModal() == wxID_OK) {
+            std::string email = dialog.GetEmail();
+            std::string password = dialog.GetPassword();
+            std::string fullName = dialog.GetFullName();
+            std::string phoneNumber = dialog.GetPhoneNumber();
+            
+            // Default role for new registrations is CUSTOMER
+            if (m_authController->registerUser(email, password, fullName, phoneNumber, UserRole::CUSTOMER)) {
+                // Show success message with dialog
+                wxMessageBox(wxString::Format("Registration successful!\n\n"
+                            "Account created for: %s\n"
+                            "Email: %s\n\n"
+                            "You can now log in with your new account.",
+                            fullName, email), 
+                            "Registration Success", 
+                            wxOK | wxICON_INFORMATION, 
+                            this);
+                
+                // Pre-fill the email field for convenience
+                m_emailCtrl->SetValue(wxString(email));
+                m_passwordCtrl->Clear();
+                m_passwordCtrl->SetFocus();
+            } else {
+                // Show detailed error message
+                wxMessageBox(wxString::Format("Registration failed!\n\n"
+                            "The email address '%s' is already registered.\n\n"
+                            "Please:\n"
+                            "- Use a different email address\n"
+                            "- Or log in if you already have an account",
+                            email), 
+                            "Registration Failed", 
+                            wxOK | wxICON_WARNING, 
+                            this);
+            }
         }
     } catch (const std::exception& e) {
-        wxString errorMsg = wxString::Format("Registration error: %s", e.what());
-        ShowMessage(errorMsg, true);
+        wxString errorMsg = wxString::Format("Registration error: %s\n\n"
+                                           "Please try again or contact support if the problem persists.", 
+                                           e.what());
+        wxMessageBox(errorMsg, "System Error", wxOK | wxICON_ERROR, this);
     }
 }
 

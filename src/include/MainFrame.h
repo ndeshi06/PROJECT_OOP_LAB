@@ -9,6 +9,7 @@ class BookingController;
 class CourtManagementPanel;
 class BookingPanel;
 class StatisticsPanel;
+class UserManagementPanel;
 
 class MainFrame : public wxFrame {
 private:
@@ -25,6 +26,7 @@ private:
     CourtManagementPanel* m_courtPanel;
     BookingPanel* m_bookingPanel;
     StatisticsPanel* m_statisticsPanel;
+    UserManagementPanel* m_userPanel;
     
     // Current user info
     wxStaticText* m_userLabel;

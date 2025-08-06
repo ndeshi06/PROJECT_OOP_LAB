@@ -2,6 +2,7 @@
 #include "CourtManagementPanel.h"
 #include "BookingPanel.h"
 #include "StatisticsPanel.h"
+#include "UserManagementPanel.h"
 #include "../include/AuthController.h"
 #include "../include/CourtController.h"
 #include "../include/BookingController.h"
@@ -20,7 +21,7 @@ wxEND_EVENT_TABLE()
 MainFrame::MainFrame(std::shared_ptr<AuthController> authController,
                      std::shared_ptr<CourtController> courtController,
                      std::shared_ptr<BookingController> bookingController)
-    : wxFrame(nullptr, wxID_ANY, "Quản lý sân cầu lông", 
+    : wxFrame(nullptr, wxID_ANY, "Badminton Court Management System", 
               wxDefaultPosition, wxSize(1200, 800)),
       m_authController(authController),
       m_courtController(courtController),
@@ -28,7 +29,6 @@ MainFrame::MainFrame(std::shared_ptr<AuthController> authController,
       m_selectedCourtId(-1),
       m_selectedBookingId(-1)
 {
-    SetIcon(wxIcon(wxIconLocation()));
     Center();
     
     CreateUI();
@@ -50,15 +50,15 @@ void MainFrame::CreateMenuBar()
     wxMenu* fileMenu = new wxMenu;
     fileMenu->Append(ID_LOGOUT, "Logout\tCtrl+L", "Logout from the system");
     fileMenu->AppendSeparator();
-    fileMenu->Append(wxID_EXIT, "Thoát\tCtrl+Q", "Thoát khỏi ứng dụng");
-    
+    fileMenu->Append(wxID_EXIT, "Exit\tCtrl+Q", "Exit the application");
+
     // Help menu
     wxMenu* helpMenu = new wxMenu;
     helpMenu->Append(wxID_ABOUT, "About\tF1", "Information about the application");
-    
-    menuBar->Append(fileMenu, "Tệp");
-    menuBar->Append(helpMenu, "Trợ giúp");
-    
+
+    menuBar->Append(fileMenu, "File");
+    menuBar->Append(helpMenu, "Help");
+
     SetMenuBar(menuBar);
 }
 
@@ -90,17 +90,33 @@ void MainFrame::CreateNotebook()
 {
     m_notebook = new wxNotebook(this, wxID_ANY);
     
-    // Court Management Panel  
-    m_courtPanel = new CourtManagementPanel(m_notebook, m_courtController, m_authController);
-    m_notebook->AddPage(m_courtPanel, "Court Management", true);
+    // Get current user role
+    UserRole currentRole = UserRole::CUSTOMER; // Default
+    if (m_authController && m_authController->getCurrentUser()) {
+        currentRole = m_authController->getCurrentUser()->getRole();
+    }
     
-    // Booking Panel
+    // Booking Panel - Available to all users
     m_bookingPanel = new BookingPanel(m_notebook, m_bookingController, m_courtController, m_authController);
-    m_notebook->AddPage(m_bookingPanel, "Booking");
+    m_notebook->AddPage(m_bookingPanel, "Booking", true);
     
-    // Statistics Panel
-    m_statisticsPanel = new StatisticsPanel(m_notebook, m_bookingController, m_courtController, m_authController);
-    m_notebook->AddPage(m_statisticsPanel, "Statistics");
+    // Court Management Panel - Only for ADMIN and STAFF
+    if (currentRole == UserRole::ADMIN || currentRole == UserRole::STAFF) {
+        m_courtPanel = new CourtManagementPanel(m_notebook, m_courtController, m_authController);
+        m_notebook->AddPage(m_courtPanel, "Court Management");
+    }
+    
+    // User Management Panel - Only for ADMIN
+    if (currentRole == UserRole::ADMIN) {
+        m_userPanel = new UserManagementPanel(m_notebook, m_authController);
+        m_notebook->AddPage(m_userPanel, "User Management");
+    }
+    
+    // Statistics Panel - Only for ADMIN and STAFF
+    if (currentRole == UserRole::ADMIN || currentRole == UserRole::STAFF) {
+        m_statisticsPanel = new StatisticsPanel(m_notebook, m_bookingController, m_courtController, m_authController);
+        m_notebook->AddPage(m_statisticsPanel, "Statistics");
+    }
 }
 
 void MainFrame::BindEvents()
