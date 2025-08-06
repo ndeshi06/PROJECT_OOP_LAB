@@ -14,7 +14,7 @@ wxBEGIN_EVENT_TABLE(LoginFrame, wxFrame)
 wxEND_EVENT_TABLE()
 
 LoginFrame::LoginFrame(std::shared_ptr<AuthController> authController)
-    : wxFrame(nullptr, wxID_ANY, "Batminton Court Management System - Login", 
+    : wxFrame(nullptr, wxID_ANY, "Badminton Court Management System - Login", 
               wxDefaultPosition, wxSize(400, 300)),
       m_authController(authController)
 {
