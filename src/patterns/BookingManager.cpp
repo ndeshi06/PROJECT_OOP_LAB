@@ -1,5 +1,8 @@
 #include "BookingManager.h"
 #include <algorithm>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
 #include <fstream>
 #include <sstream>
 
@@ -254,13 +257,89 @@ int BookingManager::getBookingCount(std::time_t startDate, std::time_t endDate) 
 }
 
 void BookingManager::loadBookings() {
-    // Implementation for loading bookings from file/database
-    // For now, this is a placeholder
+    // Always use data directory in current working directory
+    const std::string filename = "data/bookings.txt";
+    std::ifstream file(filename);
+    
+    if (!file.is_open()) {
+        // File doesn't exist yet, that's ok for first run
+        return;
+    }
+    
+    m_bookings.clear();
+    std::string line;
+    
+    while (std::getline(file, line)) {
+        if (line.empty()) continue;
+        
+        std::istringstream iss(line);
+        std::string token;
+        std::vector<std::string> tokens;
+        
+        while (std::getline(iss, token, '|')) {
+            tokens.push_back(token);
+        }
+        
+        if (tokens.size() >= 8) {
+            try {
+                auto booking = std::make_shared<Booking>();
+                booking->setId(std::stoi(tokens[0]));
+                booking->setUserId(std::stoi(tokens[1]));
+                booking->setCourtId(std::stoi(tokens[2]));
+                booking->setBookingDate(std::stoll(tokens[3]));
+                booking->setStartTime(std::stoll(tokens[4]));
+                booking->setEndTime(std::stoll(tokens[5]));
+                booking->setTotalAmount(std::stod(tokens[6]));
+                
+                // Handle both old format (8 tokens) and new format (9 tokens)
+                if (tokens.size() >= 9) {
+                    // New format with status
+                    int statusInt = std::stoi(tokens[7]);
+                    booking->setStatus(static_cast<BookingStatus>(statusInt));
+                    booking->setNotes(tokens[8]);
+                } else {
+                    // Old format without status, set default to PENDING
+                    booking->setStatus(BookingStatus::PENDING);
+                    booking->setNotes(tokens[7]);
+                }
+                
+                m_bookings.push_back(booking);
+            } catch (const std::exception& e) {
+                // Skip invalid lines
+                continue;
+            }
+        }
+    }
+    
+    file.close();
 }
 
 void BookingManager::saveBookings() {
-    // Implementation for saving bookings to file/database
-    // For now, this is a placeholder
+    // Create data directory if it doesn't exist
+    std::filesystem::create_directories("data");
+    
+    const std::string filename = "data/bookings.txt";
+    std::ofstream file(filename);
+    
+    if (!file.is_open()) {
+        return;
+    }
+    
+    for (const auto& booking : m_bookings) {
+        if (booking) {
+            file << booking->getId() << "|"
+                 << booking->getUserId() << "|"
+                 << booking->getCourtId() << "|"
+                 << booking->getBookingDate() << "|"
+                 << booking->getStartTime() << "|"
+                 << booking->getEndTime() << "|"
+                 << booking->getTotalAmount() << "|"
+                 << static_cast<int>(booking->getStatus()) << "|"
+                 << booking->getNotes() << "\n";
+        }
+    }
+    
+    file.close();
 }
 
 bool BookingManager::validateBooking(const Booking& booking) const {

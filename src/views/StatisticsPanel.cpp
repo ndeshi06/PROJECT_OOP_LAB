@@ -150,15 +150,23 @@ void StatisticsPanel::GenerateStatistics()
     }
     
     // Get actual data from controllers
-    auto bookings = m_bookingController->getAllBookings();
+    auto allBookings = m_bookingController->getAllBookings();
     auto courts = m_courtController->getAllCourts();
     
-    // Calculate real statistics
+    // Filter out cancelled bookings
+    std::vector<std::shared_ptr<Booking>> activeBookings;
+    for (const auto& booking : allBookings) {
+        if (booking && booking->getStatus() != BookingStatus::CANCELLED) {
+            activeBookings.push_back(booking);
+        }
+    }
+    
+    // Calculate real statistics from active bookings only
     double totalRevenue = 0.0;
-    int totalBookings = bookings.size();
+    int totalBookings = activeBookings.size();
     double totalHours = 0.0;
     
-    for (const auto& booking : bookings) {
+    for (const auto& booking : activeBookings) {
         if (booking) {
             totalRevenue += booking->getTotalAmount();
             // Calculate duration in hours (simplified)
@@ -193,7 +201,15 @@ void StatisticsPanel::PopulateStatsList()
     
     // Get real court and booking data
     auto courts = m_courtController->getAllCourts();
-    auto bookings = m_bookingController->getAllBookings();
+    auto allBookings = m_bookingController->getAllBookings();
+    
+    // Filter out cancelled bookings
+    std::vector<std::shared_ptr<Booking>> activeBookings;
+    for (const auto& booking : allBookings) {
+        if (booking && booking->getStatus() != BookingStatus::CANCELLED) {
+            activeBookings.push_back(booking);
+        }
+    }
     
     // Calculate statistics for each court
     for (const auto& court : courts) {
@@ -203,8 +219,8 @@ void StatisticsPanel::PopulateStatsList()
         double courtRevenue = 0.0;
         double courtHours = 0.0;
         
-        // Calculate this court's statistics
-        for (const auto& booking : bookings) {
+        // Calculate this court's statistics from active bookings only
+        for (const auto& booking : activeBookings) {
             if (booking && booking->getCourtId() == court->getId()) {
                 courtBookings++;
                 courtRevenue += booking->getTotalAmount();
@@ -213,15 +229,29 @@ void StatisticsPanel::PopulateStatsList()
             }
         }
         
-        // Calculate usage percentage (simplified)
+        // Calculate usage percentage and availability
         double usage = 0.0;
+        wxString availabilityStatus = "Available";
+        
         if (courtHours > 0) {
             double maxHours = 24 * 30; // hours per day * days per month
             usage = (courtHours / maxHours) * 100;
+            
+            // Check if court is fully booked (>80% usage means heavily booked)
+            if (usage >= 80.0) {
+                availabilityStatus = "Fully Booked";
+            } else if (usage >= 50.0) {
+                availabilityStatus = "Busy";
+            }
         }
         
-        // Add to list
-        long index = m_statsListCtrl->InsertItem(m_statsListCtrl->GetItemCount(), court->getName());
+        // Add to list with availability status
+        wxString courtName = court->getName();
+        if (availabilityStatus != "Available") {
+            courtName += " (" + availabilityStatus + ")";
+        }
+        
+        long index = m_statsListCtrl->InsertItem(m_statsListCtrl->GetItemCount(), courtName);
         m_statsListCtrl->SetItem(index, 1, wxString::Format("%d", courtBookings));
         m_statsListCtrl->SetItem(index, 2, wxString::Format("%.1f hours", courtHours));
         m_statsListCtrl->SetItem(index, 3, wxString::Format("%.0f VND", courtRevenue));
@@ -246,7 +276,20 @@ void StatisticsPanel::CalculateSummary()
 
 wxString StatisticsPanel::FormatCurrency(double amount)
 {
-    return wxString::Format("%.0f VND", amount);
+    // Convert to string with no decimals
+    wxString amountStr = wxString::Format("%.0f", amount);
+    
+    // Add thousand separators manually
+    wxString result = "";
+    int len = amountStr.length();
+    for (int i = 0; i < len; i++) {
+        if (i > 0 && (len - i) % 3 == 0) {
+            result += ",";
+        }
+        result += amountStr[i];
+    }
+    
+    return result + " VND";
 }
 
 wxString StatisticsPanel::FormatDuration(int hours)

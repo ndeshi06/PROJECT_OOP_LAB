@@ -50,6 +50,11 @@ if exist build (
     rmdir /s /q build
 )
 
+if exist data (
+    echo Cleaning existing data directory...
+    rmdir /s /q data
+)
+
 :: Create build directory
 if not exist build mkdir build
 if not exist build\obj mkdir build\obj
@@ -126,6 +131,7 @@ g++ %CXX_FLAGS% %INCLUDE_FLAGS% %WX_CXXFLAGS% -c %SRC_DIR%\views\BookingPanel.cp
 g++ %CXX_FLAGS% %INCLUDE_FLAGS% %WX_CXXFLAGS% -c %SRC_DIR%\views\StatisticsPanel.cpp -o %OBJ_DIR%\StatisticsPanel.o
 g++ %CXX_FLAGS% %INCLUDE_FLAGS% %WX_CXXFLAGS% -c %SRC_DIR%\views\RegisterDialog.cpp -o %OBJ_DIR%\RegisterDialog.o
 g++ %CXX_FLAGS% %INCLUDE_FLAGS% %WX_CXXFLAGS% -c %SRC_DIR%\views\UserManagementPanel.cpp -o %OBJ_DIR%\UserManagementPanel.o
+g++ %CXX_FLAGS% %INCLUDE_FLAGS% %WX_CXXFLAGS% -c %SRC_DIR%\views\AdminPanel.cpp -o %OBJ_DIR%\AdminPanel.o
 
 :: Compile main (GUI version)
 echo Compiling main GUI application...
@@ -159,6 +165,7 @@ g++ %CXX_FLAGS% ^
     %OBJ_DIR%\StatisticsPanel.o ^
     %OBJ_DIR%\RegisterDialog.o ^
     %OBJ_DIR%\UserManagementPanel.o ^
+    %OBJ_DIR%\AdminPanel.o ^
     %OBJ_DIR%\main.o ^
     %WX_LIBS% ^
     %SYS_LIBS% ^

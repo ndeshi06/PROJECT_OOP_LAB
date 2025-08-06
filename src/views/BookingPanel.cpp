@@ -8,14 +8,20 @@
 #include <wx/statbox.h>
 #include <wx/datectrl.h>
 #include <wx/timectrl.h>
+#include <map>
 
 wxBEGIN_EVENT_TABLE(BookingPanel, wxPanel)
     EVT_BUTTON(ID_BOOK_COURT, BookingPanel::OnBookCourt)
     EVT_BUTTON(ID_CANCEL_BOOKING, BookingPanel::OnCancelBooking)
+    EVT_BUTTON(ID_MODIFY_BOOKING, BookingPanel::OnModifyBooking)
     EVT_BUTTON(ID_CHECK_AVAILABILITY, BookingPanel::OnCheckAvailability)
     EVT_BUTTON(ID_REFRESH_BOOKINGS, BookingPanel::OnRefreshBookings)
     EVT_LIST_ITEM_SELECTED(ID_BOOKING_LIST, BookingPanel::OnBookingSelected)
+    EVT_LIST_ITEM_SELECTED(ID_AVAILABLE_SLOTS_LIST, BookingPanel::OnAvailableSlotSelected)
     EVT_CHOICE(ID_COURT_CHOICE, BookingPanel::OnCourtChanged)
+    EVT_TIME_CHANGED(ID_START_TIME, BookingPanel::OnTimeChanged)
+    EVT_TIME_CHANGED(ID_END_TIME, BookingPanel::OnTimeChanged)
+    EVT_DATE_CHANGED(ID_DATE_PICKER, BookingPanel::OnDateChanged)
 wxEND_EVENT_TABLE()
 
 BookingPanel::BookingPanel(wxWindow* parent,
@@ -32,6 +38,7 @@ BookingPanel::BookingPanel(wxWindow* parent,
     BindEvents();
     RefreshCourtList();
     RefreshData();
+    UpdateEstimatedCost(); // Calculate initial cost
 }
 
 BookingPanel::~BookingPanel()
@@ -53,7 +60,7 @@ void BookingPanel::CreateBookingForm()
 {
     m_bookingSizer = new wxStaticBoxSizer(wxVERTICAL, this, "New Booking");
     
-    wxFlexGridSizer* formGrid = new wxFlexGridSizer(6, 2, 10, 10);
+    wxFlexGridSizer* formGrid = new wxFlexGridSizer(7, 2, 10, 10);
     
     // Court selection
     formGrid->Add(new wxStaticText(this, wxID_ANY, "Select Court:"), 0, wxALIGN_CENTER_VERTICAL);
@@ -74,6 +81,26 @@ void BookingPanel::CreateBookingForm()
     formGrid->Add(new wxStaticText(this, wxID_ANY, "End Time:"), 0, wxALIGN_CENTER_VERTICAL);
     m_endTimePicker = new wxTimePickerCtrl(this, ID_END_TIME);
     formGrid->Add(m_endTimePicker, 0, wxEXPAND);
+    
+    // Add help text for time selection
+    formGrid->Add(new wxStaticText(this, wxID_ANY, ""), 0); // Empty cell
+    wxStaticText* helpText = new wxStaticText(this, wxID_ANY, 
+        "💡 Tip: Click on available time slots below to auto-select times");
+    helpText->SetForegroundColour(wxColour(100, 100, 100));
+    formGrid->Add(helpText, 0, wxALIGN_LEFT);
+    
+    // Set default time values
+    wxDateTime now = wxDateTime::Now();
+    wxDateTime defaultStart = now;
+    defaultStart.SetMinute(0);
+    defaultStart.SetSecond(0);
+    if (now.GetMinute() > 0) {
+        defaultStart += wxTimeSpan::Hours(1);
+    }
+    wxDateTime defaultEnd = defaultStart + wxTimeSpan::Hours(2);
+    
+    m_startTimePicker->SetValue(defaultStart);
+    m_endTimePicker->SetValue(defaultEnd);
     
     // Notes
     formGrid->Add(new wxStaticText(this, wxID_ANY, "Notes:"), 0, wxALIGN_CENTER_VERTICAL);
@@ -109,11 +136,18 @@ void BookingPanel::CreateAvailabilityDisplay()
                                          wxDefaultPosition, wxSize(-1, 150),
                                          wxLC_REPORT | wxLC_SINGLE_SEL);
     
-    m_availableSlotsList->AppendColumn("Time", wxLIST_FORMAT_LEFT, 150);
+    m_availableSlotsList->AppendColumn("Time Slot", wxLIST_FORMAT_LEFT, 120);
     m_availableSlotsList->AppendColumn("Price", wxLIST_FORMAT_RIGHT, 100);
-    m_availableSlotsList->AppendColumn("Status", wxLIST_FORMAT_LEFT, 100);
+    m_availableSlotsList->AppendColumn("Status & Details", wxLIST_FORMAT_LEFT, 200);
     
     m_availabilitySizer->Add(m_availableSlotsList, 1, wxEXPAND | wxALL, 5);
+    
+    // Add instruction text
+    wxStaticText* instructionText = new wxStaticText(this, wxID_ANY, 
+        "Click on an available time slot below to select it automatically:");
+    instructionText->SetFont(instructionText->GetFont().Bold());
+    m_availabilitySizer->Insert(0, instructionText, 0, wxALL, 5);
+    
     m_mainSizer->Add(m_availabilitySizer, 0, wxEXPAND | wxALL, 10);
 }
 
@@ -160,13 +194,30 @@ void BookingPanel::RefreshCourtList()
 {
     m_courtChoice->Clear();
     
-    // Add sample courts
-    m_courtChoice->Append("Court 1", new wxStringClientData("1"));
-    m_courtChoice->Append("Court 2", new wxStringClientData("2"));
-    m_courtChoice->Append("Court 3", new wxStringClientData("3"));
+    if (!m_courtController) {
+        return;
+    }
     
-    if (m_courtChoice->GetCount() > 0) {
-        m_courtChoice->SetSelection(0);
+    try {
+        auto courts = m_courtController->getAllCourts();
+        for (const auto& court : courts) {
+            if (court) {
+                wxString courtName = wxString::Format("%s", court->getName());
+                m_courtChoice->Append(courtName, new wxStringClientData(wxString::Format("%d", court->getId())));
+            }
+        }
+        
+        if (m_courtChoice->GetCount() > 0) {
+            m_courtChoice->SetSelection(0);
+        }
+    } catch (const std::exception& e) {
+        // Fallback to default courts if loading fails
+        m_courtChoice->Append("Court 1", new wxStringClientData("1"));
+        m_courtChoice->Append("Court 2", new wxStringClientData("2"));
+        m_courtChoice->Append("Court 3", new wxStringClientData("3"));
+        if (m_courtChoice->GetCount() > 0) {
+            m_courtChoice->SetSelection(0);
+        }
     }
 }
 
@@ -180,23 +231,73 @@ void BookingPanel::RefreshMyBookings()
 {
     m_userBookingsList->DeleteAllItems();
     
-    if (!m_bookingController || !m_authController || !m_authController->getCurrentUser()) {
+    if (!m_bookingController) {
+        // Show message if no booking controller
+        long index = m_userBookingsList->InsertItem(0, "Error");
+        m_userBookingsList->SetItem(index, 1, "No booking controller");
+        m_userBookingsList->SetItem(index, 2, "System error");
+        return;
+    }
+    
+    if (!m_authController) {
+        // Show message if no auth controller
+        long index = m_userBookingsList->InsertItem(0, "Error");
+        m_userBookingsList->SetItem(index, 1, "No authentication");
+        m_userBookingsList->SetItem(index, 2, "Please login");
+        return;
+    }
+    
+    auto currentUser = m_authController->getCurrentUser();
+    if (!currentUser) {
+        // Show message if user not logged in
+        long index = m_userBookingsList->InsertItem(0, "Info");
+        m_userBookingsList->SetItem(index, 1, "Not logged in");
+        m_userBookingsList->SetItem(index, 2, "Please login to view bookings");
+        m_userBookingsList->SetItem(index, 3, "");
+        m_userBookingsList->SetItem(index, 4, "");
+        m_userBookingsList->SetItem(index, 5, "");
         return;
     }
     
     try {
         // Get bookings for current user
-        int currentUserId = m_authController->getCurrentUser()->getId();
+        int currentUserId = currentUser->getId();
         auto userBookings = m_bookingController->getUserBookings(currentUserId);
         
+        if (userBookings.empty()) {
+            // Show message if no bookings found
+            long index = m_userBookingsList->InsertItem(0, "Info");
+            m_userBookingsList->SetItem(index, 1, "No bookings");
+            m_userBookingsList->SetItem(index, 2, "You haven't made any bookings yet");
+            m_userBookingsList->SetItem(index, 3, "Click 'Book Court' to make your first booking");
+            m_userBookingsList->SetItem(index, 4, "");
+            m_userBookingsList->SetItem(index, 5, "");
+            return;
+        }
+        
+        // Display actual bookings
         for (size_t i = 0; i < userBookings.size(); ++i) {
             auto booking = userBookings[i];
             if (!booking) continue;
             
             long index = m_userBookingsList->InsertItem(i, wxString::Format("%d", booking->getId()));
             
-            // Get court name (you might need to get this from CourtController)
-            m_userBookingsList->SetItem(index, 1, wxString::Format("Court %d", booking->getCourtId()));
+            // Get court name from CourtController if available
+            wxString courtName = wxString::Format("Court %d", booking->getCourtId());
+            if (m_courtController) {
+                try {
+                    auto courts = m_courtController->getAllCourts();
+                    for (const auto& court : courts) {
+                        if (court && court->getId() == booking->getCourtId()) {
+                            courtName = court->getName();
+                            break;
+                        }
+                    }
+                } catch (const std::exception& e) {
+                    // Keep default court name if error
+                }
+            }
+            m_userBookingsList->SetItem(index, 1, courtName);
             
             // Format date
             wxDateTime startTime(booking->getStartTime());
@@ -215,13 +316,25 @@ void BookingPanel::RefreshMyBookings()
             
             // Store booking ID in item data
             m_userBookingsList->SetItemData(index, booking->getId());
+            
+            // Color code by status
+            if (booking->getStatus() == BookingStatus::CANCELLED) {
+                m_userBookingsList->SetItemTextColour(index, wxColour(128, 128, 128)); // Gray for cancelled
+            } else if (booking->getStatus() == BookingStatus::CONFIRMED) {
+                m_userBookingsList->SetItemTextColour(index, wxColour(0, 128, 0)); // Green for confirmed
+            } else if (booking->getStatus() == BookingStatus::PENDING) {
+                m_userBookingsList->SetItemTextColour(index, wxColour(255, 140, 0)); // Orange for pending
+            }
         }
         
     } catch (const std::exception& e) {
-        // If error loading bookings, show a message but don't crash
+        // If error loading bookings, show detailed error message
         long index = m_userBookingsList->InsertItem(0, "Error");
         m_userBookingsList->SetItem(index, 1, "Failed to load bookings");
-        m_userBookingsList->SetItem(index, 2, e.what());
+        m_userBookingsList->SetItem(index, 2, wxString::Format("Error: %s", e.what()));
+        m_userBookingsList->SetItem(index, 3, "Try refreshing or contact support");
+        m_userBookingsList->SetItem(index, 4, "");
+        m_userBookingsList->SetItem(index, 5, "");
     }
 }
 
@@ -229,14 +342,125 @@ void BookingPanel::RefreshAvailableSlots()
 {
     m_availableSlotsList->DeleteAllItems();
     
-    // Add sample available slots
-    long index = m_availableSlotsList->InsertItem(0, "08:00 - 10:00");
-    m_availableSlotsList->SetItem(index, 1, "50,000 VND");
-    m_availableSlotsList->SetItem(index, 2, "Available");
+    // Get selected court
+    int courtSelection = m_courtChoice->GetSelection();
+    if (courtSelection == wxNOT_FOUND) {
+        return; // No court selected
+    }
     
-    index = m_availableSlotsList->InsertItem(1, "10:00 - 12:00");
-    m_availableSlotsList->SetItem(index, 1, "60,000 VND");
-    m_availableSlotsList->SetItem(index, 2, "Available");
+    // Get court ID
+    wxStringClientData* clientData = dynamic_cast<wxStringClientData*>(m_courtChoice->GetClientObject(courtSelection));
+    if (!clientData) {
+        return;
+    }
+    
+    long courtId;
+    if (!clientData->GetData().ToLong(&courtId)) {
+        return;
+    }
+    
+    // Get selected date
+    wxDateTime selectedDate = m_datePicker->GetValue();
+    
+    // Get court's hourly rate
+    double hourlyRate = 50000.0; // Default rate
+    if (m_courtController) {
+        try {
+            auto courts = m_courtController->getAllCourts();
+            for (const auto& court : courts) {
+                if (court && court->getId() == (int)courtId) {
+                    hourlyRate = court->getHourlyRate();
+                    break;
+                }
+            }
+        } catch (const std::exception& e) {
+            // Use default rate if error
+            hourlyRate = 50000.0;
+        }
+    }
+    
+    // Get all bookings for this court on this date
+    auto allBookings = m_bookingController->getAllBookings();
+    std::vector<std::pair<int, int>> bookedSlots; // start minutes, end minutes
+    std::map<std::pair<int, int>, std::shared_ptr<Booking>> slotBookingMap; // map slot to booking details
+    
+    for (const auto& booking : allBookings) {
+        if (booking && booking->getCourtId() == courtId && 
+            booking->getStatus() != BookingStatus::CANCELLED) {
+            
+            // Check if booking is on the selected date
+            wxDateTime bookingDate(booking->getBookingDate());
+            if (bookingDate.IsSameDate(selectedDate)) {
+                wxDateTime startTime(booking->getStartTime());
+                wxDateTime endTime(booking->getEndTime());
+                
+                int startMinutes = startTime.GetHour() * 60 + startTime.GetMinute();
+                int endMinutes = endTime.GetHour() * 60 + endTime.GetMinute();
+                
+                std::pair<int, int> timeSlot = {startMinutes, endMinutes};
+                bookedSlots.push_back(timeSlot);
+                slotBookingMap[timeSlot] = booking; // Store booking details for this slot
+            }
+        }
+    }
+    
+    // Generate time slots from 6:00 to 22:00 (2-hour slots)
+    for (int hour = 6; hour < 22; hour += 2) {
+        int startMinutes = hour * 60;
+        int endMinutes = (hour + 2) * 60;
+        
+        // Check if this slot conflicts with any booking
+        bool isAvailable = true;
+        std::shared_ptr<Booking> conflictingBooking = nullptr;
+        
+        for (const auto& bookedSlot : bookedSlots) {
+            // Check for time overlap
+            if (!(endMinutes <= bookedSlot.first || startMinutes >= bookedSlot.second)) {
+                isAvailable = false;
+                // Find the booking details for this conflicting slot
+                auto it = slotBookingMap.find(bookedSlot);
+                if (it != slotBookingMap.end()) {
+                    conflictingBooking = it->second;
+                }
+                break;
+            }
+        }
+        
+        // Calculate cost per slot (2 hours * court's hourly rate)
+        double cost = 2.0 * hourlyRate;
+        
+        wxString timeSlot = wxString::Format("%02d:00 - %02d:00", hour, hour + 2);
+        wxString status;
+        
+        if (isAvailable) {
+            status = "Available";
+        } else {
+            // Show detailed booking information
+            if (conflictingBooking) {
+                wxDateTime bookingStart(conflictingBooking->getStartTime());
+                wxDateTime bookingEnd(conflictingBooking->getEndTime());
+                status = wxString::Format("Booked (%s - %s) - ID: %d", 
+                    bookingStart.Format("%H:%M"),
+                    bookingEnd.Format("%H:%M"),
+                    conflictingBooking->getId());
+            } else {
+                status = "Booked";
+            }
+        }
+        
+        long index = m_availableSlotsList->InsertItem(m_availableSlotsList->GetItemCount(), timeSlot);
+        m_availableSlotsList->SetItem(index, 1, wxString::Format("%.0f VND", cost));
+        m_availableSlotsList->SetItem(index, 2, status);
+        
+        // Change text color and background for different statuses
+        if (!isAvailable) {
+            m_availableSlotsList->SetItemTextColour(index, wxColour(128, 128, 128)); // Gray text
+            m_availableSlotsList->SetItemBackgroundColour(index, wxColour(248, 248, 248)); // Light gray background
+        } else {
+            m_availableSlotsList->SetItemTextColour(index, wxColour(0, 128, 0)); // Green text for available
+            m_availableSlotsList->SetItemBackgroundColour(index, wxColour(240, 255, 240)); // Light green background
+        }
+    }
 }
 
 void BookingPanel::OnBookCourt(wxCommandEvent& event)
@@ -246,51 +470,94 @@ void BookingPanel::OnBookCourt(wxCommandEvent& event)
     }
     
     try {
-        // Get booking details for confirmation
+        // Get booking details
         int courtSelection = m_courtChoice->GetSelection();
         if (courtSelection == wxNOT_FOUND) {
             wxMessageBox("Please select a court!", "Booking Error", wxOK | wxICON_WARNING, this);
             return;
         }
         
+        // Get court ID from selection
+        // Get court ID from client data
+        wxStringClientData* clientData = dynamic_cast<wxStringClientData*>(m_courtChoice->GetClientObject(courtSelection));
+        if (!clientData) {
+            wxMessageBox("Invalid court selection!", "Booking Error", wxOK | wxICON_WARNING, this);
+            return;
+        }
+        
+        long courtId;
+        if (!clientData->GetData().ToLong(&courtId)) {
+            wxMessageBox("Invalid court ID!", "Booking Error", wxOK | wxICON_WARNING, this);
+            return;
+        }
         wxString courtName = m_courtChoice->GetStringSelection();
         wxString notes = m_notesCtrl->GetValue();
         
-        // Get current user info
-        std::string customerName = "Guest";
-        if (m_authController && m_authController->getCurrentUser()) {
-            customerName = m_authController->getCurrentUser()->getFullName();
+        // Get current user
+        auto currentUser = m_authController->getCurrentUser();
+        if (!currentUser) {
+            wxMessageBox("Please login to make a booking!", "Booking Error", wxOK | wxICON_WARNING, this);
+            return;
         }
         
-        // Show detailed success message
-        wxString successMsg = wxString::Format(
-            "Booking successful!\n\n"
-            "Court: %s\n"
-            "Customer: %s\n"
-            "Date: %s\n"
-            "Time: %s\n"
-            "Notes: %s\n\n"
-            "Your booking has been confirmed. Please arrive 10 minutes early.",
-            courtName,
-            customerName,
-            "Today", // You can get actual date from date picker
-            "Selected time slot", // You can get actual time from time picker
-            notes.IsEmpty() ? "None" : notes
+        // Get booking date and time from pickers
+        wxDateTime bookingDate = m_datePicker->GetValue();
+        wxDateTime startTime = m_startTimePicker->GetValue();
+        wxDateTime endTime = m_endTimePicker->GetValue();
+        
+        // Combine date with times
+        std::time_t bookingDateTime = CombineDateTime(bookingDate, bookingDate);
+        std::time_t startDateTime = CombineDateTime(bookingDate, startTime);
+        std::time_t endDateTime = CombineDateTime(bookingDate, endTime);
+        
+        // Create booking through controller
+        bool bookingSuccess = m_bookingController->createBooking(
+            currentUser->getId(),
+            (int)courtId,
+            bookingDateTime,
+            startDateTime,
+            endDateTime,
+            notes.ToStdString()
         );
         
-        wxMessageBox(successMsg, "Booking Confirmed", wxOK | wxICON_INFORMATION, this);
-        
-        RefreshData();
-        ClearBookingForm();
+        if (bookingSuccess) {
+            // Show detailed success message
+            wxString successMsg = wxString::Format(
+                "Booking successful!\n\n"
+                "Court: %s\n"
+                "Customer: %s (ID: %d)\n"
+                "Date: %s\n"
+                "Time: %s - %s\n"
+                "Notes: %s\n\n"
+                "Your booking has been confirmed. Please arrive 10 minutes early.",
+                courtName,
+                currentUser->getFullName(),
+                currentUser->getId(),  // Add user ID for debugging
+                bookingDate.Format("%Y-%m-%d"),
+                startTime.Format("%H:%M"),
+                endTime.Format("%H:%M"),
+                notes.IsEmpty() ? "None" : notes
+            );
+            
+            wxMessageBox(successMsg, "Booking Confirmed", wxOK | wxICON_INFORMATION, this);
+            
+            // Force refresh all data
+            RefreshData();
+            RefreshMyBookings(); // Force refresh my bookings specifically
+            RefreshAvailableSlots(); // Also refresh slots to show the new booking
+            ClearBookingForm();
+        } else {
+            wxMessageBox("Failed to create booking. Please try again.", "Booking Error", wxOK | wxICON_ERROR, this);
+        }
         
     } catch (const std::exception& e) {
         wxString errorMsg = wxString::Format(
             "Booking failed!\n\n"
             "Error: %s\n\n"
             "Please check:\n"
-            "• Court availability\n"
-            "• Selected time slot\n"
-            "• Your account permissions\n\n"
+            "- Court availability\n"
+            "- Selected time slot\n"
+            "- Your account permissions\n\n"
             "Contact support if the problem persists.",
             e.what()
         );
@@ -362,14 +629,39 @@ void BookingPanel::OnRefreshBookings(wxCommandEvent& event)
     wxMessageBox("Data refreshed!", "Information", wxOK | wxICON_INFORMATION);
 }
 
+void BookingPanel::OnModifyBooking(wxCommandEvent& event)
+{
+    if (m_selectedBookingId == -1) {
+        wxMessageBox("Please select a booking to modify!\n\n"
+                    "Click on a booking from the list below to select it.",
+                    "No Booking Selected", 
+                    wxOK | wxICON_WARNING, this);
+        return;
+    }
+    
+    wxMessageBox("Modify booking functionality will be implemented in the next update.\n\n"
+                "Currently you can:\n"
+                "- Cancel existing bookings\n"
+                "- Create new bookings\n"
+                "- View all your bookings",
+                "Feature Coming Soon", 
+                wxOK | wxICON_INFORMATION, this);
+}
+
 void BookingPanel::OnCourtChanged(wxCommandEvent& event)
 {
     RefreshAvailableSlots();
     UpdateEstimatedCost();
 }
 
-void BookingPanel::OnTimeChanged(wxCommandEvent& event)
+void BookingPanel::OnTimeChanged(wxDateEvent& event)
 {
+    UpdateEstimatedCost();
+}
+
+void BookingPanel::OnDateChanged(wxDateEvent& event)
+{
+    RefreshAvailableSlots();
     UpdateEstimatedCost();
 }
 
@@ -389,7 +681,71 @@ void BookingPanel::OnAvailableSlotSelected(wxListEvent& event)
     long item = event.GetIndex();
     if (item != -1) {
         wxString timeSlot = m_availableSlotsList->GetItemText(item);
-        // Parse and set time pickers based on selected slot
+        wxString status = m_availableSlotsList->GetItemText(item, 2); // Status column
+        
+        // Only allow selection of available slots
+        if (status != "Available") {
+            wxMessageBox("This time slot is not available!\n\n"
+                        "Please select an available time slot (green text).",
+                        "Slot Not Available", 
+                        wxOK | wxICON_WARNING, this);
+            return;
+        }
+        
+        // Parse time slot (format: "HH:MM - HH:MM")
+        wxString startTimeStr, endTimeStr;
+        if (timeSlot.Contains(" - ")) {
+            startTimeStr = timeSlot.BeforeFirst(' ');
+            endTimeStr = timeSlot.AfterLast(' ');
+            
+            // Parse hours and minutes
+            long startHour, startMin, endHour, endMin;
+            if (startTimeStr.BeforeFirst(':').ToLong(&startHour) && 
+                startTimeStr.AfterFirst(':').ToLong(&startMin) &&
+                endTimeStr.BeforeFirst(':').ToLong(&endHour) && 
+                endTimeStr.AfterFirst(':').ToLong(&endMin)) {
+                
+                // Get current date from date picker
+                wxDateTime selectedDate = m_datePicker->GetValue();
+                
+                // Create start and end times
+                wxDateTime startTime = selectedDate;
+                startTime.SetHour(startHour);
+                startTime.SetMinute(startMin);
+                startTime.SetSecond(0);
+                
+                wxDateTime endTime = selectedDate;
+                endTime.SetHour(endHour);
+                endTime.SetMinute(endMin);
+                endTime.SetSecond(0);
+                
+                // Set the time pickers
+                m_startTimePicker->SetValue(startTime);
+                m_endTimePicker->SetValue(endTime);
+                
+                // Update cost calculation
+                UpdateEstimatedCost();
+                
+                // Show confirmation message
+                wxString confirmMsg = wxString::Format(
+                    "Time slot selected:\n\n"
+                    "Start Time: %s\n"
+                    "End Time: %s\n\n"
+                    "You can now proceed to book this time slot.",
+                    startTime.Format("%H:%M"),
+                    endTime.Format("%H:%M")
+                );
+                
+                wxMessageBox(confirmMsg, "Time Slot Selected", 
+                            wxOK | wxICON_INFORMATION, this);
+            } else {
+                wxMessageBox("Failed to parse time slot format!", 
+                            "Format Error", wxOK | wxICON_ERROR, this);
+            }
+        } else {
+            wxMessageBox("Invalid time slot format!", 
+                        "Format Error", wxOK | wxICON_ERROR, this);
+        }
     }
 }
 
@@ -406,14 +762,27 @@ bool BookingPanel::ValidateBookingInput()
     wxDateTime startTime = m_startTimePicker->GetValue();
     wxDateTime endTime = m_endTimePicker->GetValue();
     
-    if (startTime >= endTime) {
+    // Compare just the time parts
+    int startMinutes = startTime.GetHour() * 60 + startTime.GetMinute();
+    int endMinutes = endTime.GetHour() * 60 + endTime.GetMinute();
+    
+    if (startMinutes >= endMinutes) {
         wxMessageBox("Invalid time selection!\n\n"
                     "End time must be after start time.\n\n"
                     "Please check:\n"
-                    "• Start time is earlier than end time\n"
-                    "• Minimum booking duration is 1 hour\n"
-                    "• Maximum booking duration is 4 hours",
+                    "- Start time is earlier than end time\n"
+                    "- Minimum booking duration is 1 hour\n"
+                    "- Maximum booking duration is 4 hours",
                     "Time Validation Error", 
+                    wxOK | wxICON_WARNING, this);
+        return false;
+    }
+    
+    // Check minimum duration (1 hour)
+    if ((endMinutes - startMinutes) < 60) {
+        wxMessageBox("Minimum booking duration is 1 hour!\n\n"
+                    "Please select a longer time slot.",
+                    "Duration Too Short", 
                     wxOK | wxICON_WARNING, this);
         return false;
     }
@@ -427,13 +796,67 @@ bool BookingPanel::ValidateBookingInput()
         return false;
     }
     
+    // Check court availability (if court is heavily booked)
+    if (IsCourtFullyBooked()) {
+        wxMessageBox("Selected court is currently fully booked!\n\n"
+                    "This court has reached maximum capacity.\n"
+                    "Please try:\n"
+                    "- Selecting a different court\n"
+                    "- Choosing a different time slot\n"
+                    "- Booking for another date",
+                    "Court Not Available", 
+                    wxOK | wxICON_WARNING, this);
+        return false;
+    }
+    
     return true;
 }
 
 void BookingPanel::UpdateEstimatedCost()
 {
     // Calculate estimated cost based on selected court, date, and time
-    m_costLabel->SetLabel("75,000 VND");
+    wxDateTime startTime = m_startTimePicker->GetValue();
+    wxDateTime endTime = m_endTimePicker->GetValue();
+    
+    // Calculate duration in hours
+    int startMinutes = startTime.GetHour() * 60 + startTime.GetMinute();
+    int endMinutes = endTime.GetHour() * 60 + endTime.GetMinute();
+    
+    if (endMinutes <= startMinutes) {
+        m_costLabel->SetLabel("0 VND");
+        return;
+    }
+    
+    double durationHours = (endMinutes - startMinutes) / 60.0;
+    
+    // Get selected court's price
+    double hourlyRate = 50000.0; // Default price
+    
+    int courtSelection = m_courtChoice->GetSelection();
+    if (courtSelection != wxNOT_FOUND && m_courtController) {
+        wxStringClientData* clientData = dynamic_cast<wxStringClientData*>(m_courtChoice->GetClientObject(courtSelection));
+        if (clientData) {
+            long courtId;
+            if (clientData->GetData().ToLong(&courtId)) {
+                try {
+                    auto courts = m_courtController->getAllCourts();
+                    for (const auto& court : courts) {
+                        if (court && court->getId() == (int)courtId) {
+                            hourlyRate = court->getHourlyRate();
+                            break;
+                        }
+                    }
+                } catch (const std::exception& e) {
+                    // Use default rate if error
+                    hourlyRate = 50000.0;
+                }
+            }
+        }
+    }
+    
+    double totalCost = durationHours * hourlyRate;
+    
+    m_costLabel->SetLabel(wxString::Format("%.0f VND", totalCost));
 }
 
 void BookingPanel::ClearBookingForm()
@@ -441,10 +864,22 @@ void BookingPanel::ClearBookingForm()
     m_notesCtrl->Clear();
     m_costLabel->SetLabel("0 VND");
     
-    // Reset time pickers to default
+    // Reset time pickers to reasonable defaults
     wxDateTime now = wxDateTime::Now();
-    m_startTimePicker->SetValue(now);
-    m_endTimePicker->SetValue(now);
+    
+    // Set default start time to next hour
+    wxDateTime startTime = now;
+    startTime.SetMinute(0);
+    startTime.SetSecond(0);
+    if (now.GetMinute() > 0) {
+        startTime += wxTimeSpan::Hours(1);
+    }
+    
+    // Set default end time to 2 hours later
+    wxDateTime endTime = startTime + wxTimeSpan::Hours(2);
+    
+    m_startTimePicker->SetValue(startTime);
+    m_endTimePicker->SetValue(endTime);
 }
 
 void BookingPanel::UpdateButtonStates()
@@ -469,13 +904,64 @@ wxString BookingPanel::FormatTimeSlot(std::time_t startTime, std::time_t endTime
 
 wxString BookingPanel::FormatCurrency(double amount)
 {
-    return wxString::Format("%.0f VND", amount);
+    // Convert to string with no decimals
+    wxString amountStr = wxString::Format("%.0f", amount);
+    
+    // Add thousand separators manually
+    wxString result = "";
+    int len = amountStr.length();
+    for (int i = 0; i < len; i++) {
+        if (i > 0 && (len - i) % 3 == 0) {
+            result += ",";
+        }
+        result += amountStr[i];
+    }
+    
+    return result + " VND";
 }
 
 wxString BookingPanel::FormatDateTime(std::time_t time)
 {
     wxDateTime dt(time);
     return dt.Format("%Y-%m-%d %H:%M");
+}
+
+bool BookingPanel::IsCourtFullyBooked()
+{
+    // Get selected court
+    int courtSelection = m_courtChoice->GetSelection();
+    if (courtSelection == wxNOT_FOUND) {
+        return false; // No court selected
+    }
+    
+    // Get court ID
+    wxStringClientData* clientData = dynamic_cast<wxStringClientData*>(m_courtChoice->GetClientObject(courtSelection));
+    if (!clientData) {
+        return false;
+    }
+    
+    long courtId;
+    if (!clientData->GetData().ToLong(&courtId)) {
+        return false;
+    }
+    
+    // Get all active bookings for this court
+    auto allBookings = m_bookingController->getAllBookings();
+    double courtHours = 0.0;
+    
+    for (const auto& booking : allBookings) {
+        if (booking && booking->getCourtId() == courtId && 
+            booking->getStatus() != BookingStatus::CANCELLED) {
+            double duration = (booking->getEndTime() - booking->getStartTime()) / 3600.0;
+            courtHours += duration;
+        }
+    }
+    
+    // Consider court fully booked if usage > 80% (about 19.2 hours per day)
+    double maxHours = 24 * 30; // hours per day * days per month  
+    double usage = (courtHours / maxHours) * 100;
+    
+    return usage >= 80.0;
 }
 
 std::time_t BookingPanel::CombineDateTime(const wxDateTime& date, const wxDateTime& time)

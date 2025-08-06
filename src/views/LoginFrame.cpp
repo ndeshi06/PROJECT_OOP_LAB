@@ -233,8 +233,10 @@ void LoginFrame::OnRegister(wxCommandEvent& event) {
         // Register user
         if (m_authController->registerUser(email, password, fullName, phoneNumber)) {
             ShowMessage("Registration successful! Please login.", false);
+            wxMessageBox("Registration successful! Please login.", "Success", wxOK | wxICON_INFORMATION);
         } else {
             ShowMessage("Registration failed!", true);
+            wxMessageBox("Registration failed! Please try again.", "Error", wxOK | wxICON_ERROR);
         }
     }
     registerDialog->Destroy();

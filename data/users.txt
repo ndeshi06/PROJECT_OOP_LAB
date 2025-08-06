@@ -1,2 +1,0 @@
-2|abc@a.com|abc123|a|0200202|CUSTOMER|1|1754500257
-3|admin@badminton.com|admin123|Administrator|0123456789|ADMIN|1|1754500257

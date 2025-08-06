@@ -3,6 +3,7 @@
 
 # Build output
 build/
+data/
 
 # Object files
 *.o

@@ -10,6 +10,8 @@
 #include "BookingManager.h"
 #include "NotificationObserver.h"
 #include <memory>
+#include <fstream>
+#include <vector>
 
 wxIMPLEMENT_APP(BadmintonApp);
 
@@ -77,11 +79,28 @@ void BadmintonApp::LoadInitialData() {
     // Note: Default admin user creation is handled in AuthController constructor
     // No need to create admin here as it would cause duplicates
     
-    // Create default courts if none exist
+    // Create default courts if none exist (only once)
     if (m_courtController->getAllCourts().empty()) {
-        m_courtController->addCourt("Court 1", "Standard badminton court", 50000.0);
-        m_courtController->addCourt("Court 2", "Premium badminton court", 75000.0);
-        m_courtController->addCourt("Court 3", "VIP badminton court", 100000.0);
+        // Check if courts file exists to avoid recreating
+        std::vector<std::string> possiblePaths = {
+            "data/courts.txt",                    // Current directory
+            "../data/courts.txt",                 // Parent directory
+            "build/data/courts.txt",              // Build subdirectory
+        };
+        std::ifstream courtsFile;
+        for (const auto& path : possiblePaths) {
+            courtsFile.open(path);
+            if (courtsFile) {
+                break;  // Stop at the first valid path
+            }
+        }
+        if (!courtsFile) {
+            // Only create default courts if file doesn't exist
+            m_courtController->addCourt("Court 1", "Standard badminton court", 50000.0);
+            m_courtController->addCourt("Court 2", "Premium badminton court", 75000.0);
+            m_courtController->addCourt("Court 3", "VIP badminton court", 100000.0);
+        }
+        courtsFile.close();
     }
 }
 

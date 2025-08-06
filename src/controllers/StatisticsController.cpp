@@ -1,8 +1,14 @@
 #include "StatisticsController.h"
+#include "BookingManager.h"
+#include "Booking.h"
 #include <iostream>
+#include <map>
+#include <ctime>
 
 StatisticsController::StatisticsController() {
     m_statistics = std::make_unique<Statistics>();
+    // Auto-collect data on initialization
+    collectDataFromBookingManager();
 }
 
 StatisticsController::~StatisticsController() {
@@ -45,6 +51,65 @@ void StatisticsController::updateStatistics() {
 }
 
 void StatisticsController::collectDataFromBookingManager() {
-    // Placeholder for collecting data from BookingManager
-    std::cout << "Collecting statistics data..." << std::endl;
+    // Get all bookings from BookingManager
+    BookingManager& bookingManager = BookingManager::getInstance();
+    auto allBookings = bookingManager.getAllBookings();
+    
+    // Clear existing statistics
+    m_statistics = std::make_unique<Statistics>();
+    
+    // Group bookings by date and court for statistics
+    std::map<std::time_t, std::map<int, std::vector<BookingPtr>>> dailyCourtBookings;
+    
+    for (const auto& booking : allBookings) {
+        if (!booking) continue;
+        
+        // Skip cancelled bookings - only count confirmed/pending/completed
+        if (booking->getStatus() == BookingStatus::CANCELLED) {
+            continue;
+        }
+        
+        // Get date (midnight of booking date)
+        std::time_t bookingDate = booking->getBookingDate();
+        std::tm* tm = std::localtime(&bookingDate);
+        tm->tm_hour = 0;
+        tm->tm_min = 0;
+        tm->tm_sec = 0;
+        std::time_t dateKey = std::mktime(tm);
+        
+        dailyCourtBookings[dateKey][booking->getCourtId()].push_back(booking);
+    }
+    
+    // Calculate daily statistics
+    for (const auto& dayPair : dailyCourtBookings) {
+        std::time_t date = dayPair.first;
+        int totalBookingsForDay = 0;
+        double totalRevenueForDay = 0.0;
+        
+        for (const auto& courtPair : dayPair.second) {
+            int courtId = courtPair.first;
+            const auto& courtBookings = courtPair.second;
+            
+            int courtBookingCount = courtBookings.size();
+            double courtRevenue = 0.0;
+            
+            for (const auto& booking : courtBookings) {
+                courtRevenue += booking->getTotalAmount();
+            }
+            
+            totalBookingsForDay += courtBookingCount;
+            totalRevenueForDay += courtRevenue;
+            
+            // Update court statistics
+            std::string courtName = "Court " + std::to_string(courtId);
+            double utilizationRate = std::min(100.0, (courtBookingCount * 100.0) / 12.0); // Assuming 12 slots per day
+            
+            m_statistics->updateCourtStats(courtId, courtName, courtBookingCount, courtRevenue, utilizationRate);
+        }
+        
+        // Update daily statistics
+        m_statistics->updateDailyStats(date, totalBookingsForDay, totalRevenueForDay);
+    }
+    
+    std::cout << "Statistics data collected successfully." << std::endl;
 }

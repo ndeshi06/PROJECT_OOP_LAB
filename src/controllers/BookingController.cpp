@@ -114,8 +114,8 @@ bool BookingController::validateBookingDate(std::time_t bookingDate) const {
 
 double BookingController::calculateBookingCost(int courtId, std::time_t startTime, std::time_t endTime) const {
     // This would typically get the court's hourly rate from CourtController
-    // For now, using a fixed rate
-    double hourlyRate = 50.0; // Default rate
+    // For now, using a fixed rate in VND
+    double hourlyRate = 50000.0; // Default rate in VND
     
     double hours = static_cast<double>(endTime - startTime) / 3600.0;
     return hours * hourlyRate;

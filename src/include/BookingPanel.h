@@ -60,7 +60,8 @@ public:
     void OnModifyBooking(wxCommandEvent& event);
     void OnRefreshBookings(wxCommandEvent& event);
     void OnCourtChanged(wxCommandEvent& event);
-    void OnTimeChanged(wxCommandEvent& event);
+    void OnTimeChanged(wxDateEvent& event);
+    void OnDateChanged(wxDateEvent& event);
     void OnBookingSelected(wxListEvent& event);
     void OnAvailableSlotSelected(wxListEvent& event);
 
@@ -93,6 +94,7 @@ private:
     bool ValidateBookingInput();
     void ClearBookingForm();
     void UpdateButtonStates();
+    bool IsCourtFullyBooked();
     
     // Helper methods
     wxString FormatTimeSlot(std::time_t startTime, std::time_t endTime);

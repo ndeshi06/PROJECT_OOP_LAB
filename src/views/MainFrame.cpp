@@ -4,6 +4,7 @@
 #include "BookingPanel.h"
 #include "StatisticsPanel.h"
 #include "UserManagementPanel.h"
+#include "AdminPanel.h"
 #include "LoginFrame.h"
 #include "../include/AuthController.h"
 #include "../include/CourtController.h"
@@ -109,9 +110,13 @@ void MainFrame::CreateNotebook()
     
     // For ADMIN: Show management tabs first, no booking tab needed
     if (currentRole == UserRole::ADMIN) {
-        // User Management Panel - Primary tab for ADMIN
+        // Admin Panel - Primary tab for ADMIN (Booking History)
+        m_adminPanel = new AdminPanel(m_notebook, m_bookingController, m_courtController, m_authController);
+        m_notebook->AddPage(m_adminPanel, "Booking History", true); // Set as default tab
+        
+        // User Management Panel
         m_userPanel = new UserManagementPanel(m_notebook, m_authController);
-        m_notebook->AddPage(m_userPanel, "User Management", true); // Set as default tab
+        m_notebook->AddPage(m_userPanel, "User Management");
         
         // Court Management Panel
         m_courtPanel = new CourtManagementPanel(m_notebook, m_courtController, m_authController);

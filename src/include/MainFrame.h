@@ -10,6 +10,7 @@ class CourtManagementPanel;
 class BookingPanel;
 class StatisticsPanel;
 class UserManagementPanel;
+class AdminPanel;
 class LoginFrame;
 
 class MainFrame : public wxFrame {
@@ -28,6 +29,7 @@ private:
     BookingPanel* m_bookingPanel;
     StatisticsPanel* m_statisticsPanel;
     UserManagementPanel* m_userPanel;
+    AdminPanel* m_adminPanel;
     
     // Current user info
     wxStaticText* m_userLabel;
