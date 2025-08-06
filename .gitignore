@@ -1,0 +1,19 @@
+# VS Code settings
+.vscode/
+
+# Build output
+build/
+
+# Object files
+*.o
+*.obj
+
+# Executable files
+*.exe
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+src/.cph/
