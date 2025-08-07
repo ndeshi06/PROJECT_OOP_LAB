@@ -800,17 +800,17 @@ void BookingPanel::OnAvailableSlotSelected(wxListEvent& event)
                 UpdateEstimatedCost();
                 
                 // Show confirmation message
-                wxString confirmMsg = wxString::Format(
-                    "Time slot selected:\n\n"
-                    "Start Time: %s\n"
-                    "End Time: %s\n\n"
-                    "You can now proceed to book this time slot.",
-                    startTime.Format("%H:%M"),
-                    endTime.Format("%H:%M")
-                );
+                // wxString confirmMsg = wxString::Format(
+                //     "Time slot selected:\n\n"
+                //     "Start Time: %s\n"
+                //     "End Time: %s\n\n"
+                //     "You can now proceed to book this time slot.",
+                //     startTime.Format("%H:%M"),
+                //     endTime.Format("%H:%M")
+                // );
                 
-                wxMessageBox(confirmMsg, "Time Slot Selected", 
-                            wxOK | wxICON_INFORMATION, this);
+                // wxMessageBox(confirmMsg, "Time Slot Selected", 
+                //             wxOK | wxICON_INFORMATION, this);
             } else {
                 wxMessageBox("Failed to parse time slot format!", 
                             "Format Error", wxOK | wxICON_ERROR, this);
