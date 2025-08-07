@@ -69,7 +69,9 @@ void BookingPanel::CreateBookingForm()
     
     // Date
     formGrid->Add(new wxStaticText(this, wxID_ANY, "Date:"), 0, wxALIGN_CENTER_VERTICAL);
-    m_datePicker = new wxDatePickerCtrl(this, ID_DATE_PICKER);
+    m_datePicker = new wxDatePickerCtrl(this, ID_DATE_PICKER, wxDefaultDateTime, 
+                                       wxDefaultPosition, wxDefaultSize, 
+                                       wxDP_DROPDOWN | wxDP_SHOWCENTURY);
     formGrid->Add(m_datePicker, 0, wxEXPAND);
     
     // Start time

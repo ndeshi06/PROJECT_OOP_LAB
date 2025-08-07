@@ -1,6 +1,7 @@
 #include <wx/wx.h>
 #include <wx/app.h>
 #include <wx/event.h>
+#include <wx/intl.h>
 #include "BadmintonApp.h"
 #include "LoginFrame.h"
 #include "MainFrame.h"
@@ -16,8 +17,8 @@
 wxIMPLEMENT_APP(BadmintonApp);
 
 bool BadmintonApp::OnInit() {
-    // Set UTF-8 encoding for proper Vietnamese character display
-    wxLocale::GetSystemLanguage();
+    // Set locale for proper date format display (DD/MM/YYYY)
+    wxLocale* locale = new wxLocale(wxLANGUAGE_DEFAULT);
     
     SetExitOnFrameDelete(false);
     
