@@ -44,11 +44,15 @@ void StatisticsPanel::CreateDateControls()
     
     // Start date
     wxStaticText* startLabel = new wxStaticText(this, wxID_ANY, "From Date:");
-    m_startDatePicker = new wxDatePickerCtrl(this, ID_START_DATE);
+    m_startDatePicker = new wxDatePickerCtrl(this, ID_START_DATE, wxDefaultDateTime, 
+                                       wxDefaultPosition, wxDefaultSize, 
+                                       wxDP_DROPDOWN | wxDP_SHOWCENTURY);
     
     // End date
     wxStaticText* endLabel = new wxStaticText(this, wxID_ANY, "To Date:");
-    m_endDatePicker = new wxDatePickerCtrl(this, ID_END_DATE);
+    m_endDatePicker = new wxDatePickerCtrl(this, ID_END_DATE, wxDefaultDateTime, 
+                                       wxDefaultPosition, wxDefaultSize, 
+                                       wxDP_DROPDOWN | wxDP_SHOWCENTURY);
     
     // Buttons
     m_generateBtn = new wxButton(this, ID_GENERATE_STATS, "Generate Report");

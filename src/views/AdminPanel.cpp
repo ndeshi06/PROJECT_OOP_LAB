@@ -59,12 +59,16 @@ void AdminPanel::CreateFilterControls()
     
     // Date filters
     filterSizer->Add(new wxStaticText(this, wxID_ANY, "From:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
-    m_startDatePicker = new wxDatePickerCtrl(this, ID_START_DATE_PICKER);
+    m_startDatePicker = new wxDatePickerCtrl(this, ID_START_DATE_PICKER, wxDefaultDateTime, 
+                                       wxDefaultPosition, wxDefaultSize, 
+                                       wxDP_DROPDOWN | wxDP_SHOWCENTURY);
     m_startDatePicker->SetValue(wxDateTime::Now() - wxTimeSpan::Days(30));
     filterSizer->Add(m_startDatePicker, 0, wxRIGHT, 10);
     
     filterSizer->Add(new wxStaticText(this, wxID_ANY, "To:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
-    m_endDatePicker = new wxDatePickerCtrl(this, ID_END_DATE_PICKER);
+    m_endDatePicker = new wxDatePickerCtrl(this, ID_END_DATE_PICKER, wxDefaultDateTime, 
+                                       wxDefaultPosition, wxDefaultSize, 
+                                       wxDP_DROPDOWN | wxDP_SHOWCENTURY);
     m_endDatePicker->SetValue(wxDateTime::Now());
     filterSizer->Add(m_endDatePicker, 0, wxRIGHT, 10);
     
