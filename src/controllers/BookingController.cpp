@@ -21,6 +21,7 @@ bool BookingController::createBooking(int userId, int courtId, std::time_t booki
     
     Booking booking(userId, courtId, bookingDate, startTime, endTime, cost);
     booking.setNotes(notes);
+    booking.setStatus(BookingStatus::CONFIRMED); // Set as confirmed when successfully created
     
     return m_bookingManager.createBooking(booking);
 }
@@ -98,8 +99,11 @@ bool BookingController::isSlotAvailable(int courtId, std::time_t startTime, std:
 bool BookingController::validateBookingTime(std::time_t startTime, std::time_t endTime) const {
     if (startTime >= endTime) return false;
     
-    if (!isWithinBusinessHours(startTime) || !isWithinBusinessHours(endTime)) {
-        return false;
+    // Check if start time is at least 1 hour from now
+    std::time_t now = std::time(nullptr);
+    std::time_t oneHourFromNow = now + 3600; // Add 1 hour (3600 seconds)
+    if (startTime < oneHourFromNow) {
+        return false; // Must book at least 1 hour in advance
     }
     
     return isValidBookingDuration(startTime, endTime);

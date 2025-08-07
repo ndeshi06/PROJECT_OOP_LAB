@@ -405,24 +405,36 @@ void BookingPanel::RefreshAvailableSlots()
     }
     
     // Generate time slots from 6:00 to 22:00 (2-hour slots)
+    wxDateTime now = wxDateTime::Now();
+    
     for (int hour = 6; hour < 22; hour += 2) {
         int startMinutes = hour * 60;
         int endMinutes = (hour + 2) * 60;
         
+        // Check if this time slot is in the past
+        wxDateTime slotStartTime = selectedDate;
+        slotStartTime.SetHour(hour);
+        slotStartTime.SetMinute(0);
+        slotStartTime.SetSecond(0);
+        
+        bool isPastTime = slotStartTime <= now;
+        
         // Check if this slot conflicts with any booking
-        bool isAvailable = true;
+        bool isAvailable = !isPastTime; // Not available if in the past
         std::shared_ptr<Booking> conflictingBooking = nullptr;
         
-        for (const auto& bookedSlot : bookedSlots) {
-            // Check for time overlap
-            if (!(endMinutes <= bookedSlot.first || startMinutes >= bookedSlot.second)) {
-                isAvailable = false;
-                // Find the booking details for this conflicting slot
-                auto it = slotBookingMap.find(bookedSlot);
-                if (it != slotBookingMap.end()) {
-                    conflictingBooking = it->second;
+        if (!isPastTime) {
+            for (const auto& bookedSlot : bookedSlots) {
+                // Check for time overlap
+                if (!(endMinutes <= bookedSlot.first || startMinutes >= bookedSlot.second)) {
+                    isAvailable = false;
+                    // Find the booking details for this conflicting slot
+                    auto it = slotBookingMap.find(bookedSlot);
+                    if (it != slotBookingMap.end()) {
+                        conflictingBooking = it->second;
+                    }
+                    break;
                 }
-                break;
             }
         }
         
@@ -435,8 +447,10 @@ void BookingPanel::RefreshAvailableSlots()
         if (isAvailable) {
             status = "Available";
         } else {
-            // Show detailed booking information
-            if (conflictingBooking) {
+            // Distinguish between past time and actually booked
+            if (isPastTime) {
+                status = "Not Available (Past Time)";
+            } else if (conflictingBooking) {
                 wxDateTime bookingStart(conflictingBooking->getStartTime());
                 wxDateTime bookingEnd(conflictingBooking->getEndTime());
                 status = wxString::Format("Booked (%s - %s) - ID: %d", 
@@ -444,7 +458,7 @@ void BookingPanel::RefreshAvailableSlots()
                     bookingEnd.Format("%H:%M"),
                     conflictingBooking->getId());
             } else {
-                status = "Booked";
+                status = "Not Available";
             }
         }
         
@@ -453,12 +467,18 @@ void BookingPanel::RefreshAvailableSlots()
         m_availableSlotsList->SetItem(index, 2, status);
         
         // Change text color and background for different statuses
-        if (!isAvailable) {
-            m_availableSlotsList->SetItemTextColour(index, wxColour(128, 128, 128)); // Gray text
-            m_availableSlotsList->SetItemBackgroundColour(index, wxColour(248, 248, 248)); // Light gray background
-        } else {
+        if (isAvailable) {
             m_availableSlotsList->SetItemTextColour(index, wxColour(0, 128, 0)); // Green text for available
             m_availableSlotsList->SetItemBackgroundColour(index, wxColour(240, 255, 240)); // Light green background
+        } else if (isPastTime) {
+            m_availableSlotsList->SetItemTextColour(index, wxColour(160, 160, 160)); // Light gray text for past time
+            m_availableSlotsList->SetItemBackgroundColour(index, wxColour(250, 250, 250)); // Very light gray background
+        } else if (conflictingBooking) {
+            m_availableSlotsList->SetItemTextColour(index, wxColour(180, 0, 0)); // Dark red text for booked
+            m_availableSlotsList->SetItemBackgroundColour(index, wxColour(255, 240, 240)); // Light red background
+        } else {
+            m_availableSlotsList->SetItemTextColour(index, wxColour(128, 128, 128)); // Gray text for other unavailable
+            m_availableSlotsList->SetItemBackgroundColour(index, wxColour(248, 248, 248)); // Light gray background
         }
     }
 }
