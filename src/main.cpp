@@ -95,7 +95,7 @@ void BadmintonApp::LoadInitialData() {
                 break;  // Stop at the first valid path
             }
         }
-        if (!courtsFile) {
+        if (!courtsFile.is_open() || courtsFile.peek() == std::ifstream::traits_type::eof()) {
             // Only create default courts if file doesn't exist
             m_courtController->addCourt("Court 1", "Standard badminton court", 50000.0);
             m_courtController->addCourt("Court 2", "Premium badminton court", 75000.0);

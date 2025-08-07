@@ -27,9 +27,11 @@ bool BookingManager::createBooking(const Booking& booking) {
         return false;
     }
     
-    // Create a copy and assign ID
+    // Create a copy and assign ID, preserve status
     Booking newBooking = booking;
     generateBookingId(newBooking);
+    // Ensure the status from the original booking is preserved
+    newBooking.setStatus(booking.getStatus());
     
     // Add to bookings
     auto bookingPtr = std::make_shared<Booking>(newBooking);
