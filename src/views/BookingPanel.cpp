@@ -299,9 +299,9 @@ void BookingPanel::RefreshMyBookings()
             }
             m_userBookingsList->SetItem(index, 1, courtName);
             
-            // Format date
+            // Format date - Vietnamese format: DD/MM/YYYY
             wxDateTime startTime(booking->getStartTime());
-            m_userBookingsList->SetItem(index, 2, startTime.Format("%Y-%m-%d"));
+            m_userBookingsList->SetItem(index, 2, startTime.Format("%d/%m/%Y"));
             
             // Format time slot
             wxDateTime endTime(booking->getEndTime());
@@ -411,13 +411,16 @@ void BookingPanel::RefreshAvailableSlots()
         int startMinutes = hour * 60;
         int endMinutes = (hour + 2) * 60;
         
-        // Check if this time slot is in the past
+        // Check if this time slot is in the past or too close to current time
         wxDateTime slotStartTime = selectedDate;
         slotStartTime.SetHour(hour);
         slotStartTime.SetMinute(0);
         slotStartTime.SetSecond(0);
         
-        bool isPastTime = slotStartTime <= now;
+        wxDateTime oneHourFromNow = now;
+        oneHourFromNow.Add(wxTimeSpan::Hours(1));
+        
+        bool isPastTime = slotStartTime <= oneHourFromNow; // Must be at least 1 hour from now
         
         // Check if this slot conflicts with any booking
         bool isAvailable = !isPastTime; // Not available if in the past
@@ -449,7 +452,7 @@ void BookingPanel::RefreshAvailableSlots()
         } else {
             // Distinguish between past time and actually booked
             if (isPastTime) {
-                status = "Not Available (Past Time)";
+                status = "Not Available";
             } else if (conflictingBooking) {
                 wxDateTime bookingStart(conflictingBooking->getStartTime());
                 wxDateTime bookingEnd(conflictingBooking->getEndTime());
@@ -553,7 +556,7 @@ void BookingPanel::OnBookCourt(wxCommandEvent& event)
                 courtName,
                 currentUser->getFullName(),
                 currentUser->getId(),  // Add user ID for debugging
-                bookingDate.Format("%Y-%m-%d"),
+                bookingDate.Format("%d/%m/%Y"),
                 startTime.Format("%H:%M"),
                 endTime.Format("%H:%M"),
                 notes.IsEmpty() ? "None" : notes
@@ -645,7 +648,7 @@ void BookingPanel::OnCancelBooking(wxCommandEvent& event)
             "You may be charged a cancellation fee depending on the timing.",
             selectedBooking->getId(),
             wxString::Format("Court %d", selectedBooking->getCourtId()),
-            wxDateTime(selectedBooking->getBookingDate()).Format("%Y-%m-%d"),
+            wxDateTime(selectedBooking->getBookingDate()).Format("%d/%m/%Y"),
             selectedBooking->getStatusString()
         );
         
@@ -1019,7 +1022,7 @@ wxString BookingPanel::FormatCurrency(double amount)
 wxString BookingPanel::FormatDateTime(std::time_t time)
 {
     wxDateTime dt(time);
-    return dt.Format("%Y-%m-%d %H:%M");
+    return dt.Format("%d/%m/%Y %H:%M");
 }
 
 bool BookingPanel::IsCourtFullyBooked()

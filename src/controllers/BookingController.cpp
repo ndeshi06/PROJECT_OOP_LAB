@@ -12,9 +12,6 @@ BookingController::~BookingController() {
 bool BookingController::createBooking(int userId, int courtId, std::time_t bookingDate,
                                     std::time_t startTime, std::time_t endTime, 
                                     const std::string& notes) {
-    if (!validateBookingTime(startTime, endTime) || !validateBookingDate(bookingDate)) {
-        return false;
-    }
     
     double cost = calculateBookingCost(courtId, startTime, endTime);
     if (cost < 0) return false;

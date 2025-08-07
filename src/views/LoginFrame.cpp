@@ -236,7 +236,7 @@ void LoginFrame::OnRegister(wxCommandEvent& event) {
             wxMessageBox("Registration successful! Please login.", "Success", wxOK | wxICON_INFORMATION);
         } else {
             ShowMessage("Registration failed!", true);
-            wxMessageBox("Registration failed! Please try again.", "Error", wxOK | wxICON_ERROR);
+            wxMessageBox("Registration failed! Account already exists.", "Error", wxOK | wxICON_ERROR);
         }
     }
     registerDialog->Destroy();

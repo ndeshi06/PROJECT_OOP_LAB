@@ -233,7 +233,7 @@ void AdminPanel::RefreshBookingHistory()
             
             // Date
             wxDateTime bookingDate(booking->getBookingDate());
-            m_bookingHistoryList->SetItem(index, 3, bookingDate.Format("%Y-%m-%d"));
+            m_bookingHistoryList->SetItem(index, 3, bookingDate.Format("%d/%m/%Y"));
             
             // Time
             wxDateTime startTime(booking->getStartTime());
