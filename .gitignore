@@ -18,3 +18,4 @@ data/
 # Temporary files
 *.tmp
 src/.cph/
+.DS_Store
