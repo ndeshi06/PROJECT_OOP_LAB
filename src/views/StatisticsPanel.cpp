@@ -6,6 +6,13 @@
 #include <wx/msgdlg.h>
 #include <wx/datectrl.h>
 #include <wx/statbox.h>
+#include <wx/filedlg.h>
+#include <wx/file.h>
+#include <sstream>
+#include <map>
+#include <tuple>
+#include <iomanip>
+#include <ctime>
 
 // Event table
 wxBEGIN_EVENT_TABLE(StatisticsPanel, wxPanel)
@@ -128,8 +135,172 @@ void StatisticsPanel::OnGenerateStats(wxCommandEvent& event)
 
 void StatisticsPanel::OnExportStats(wxCommandEvent& event)
 {
-    wxMessageBox("Export feature will be implemented later!", "Information", 
-                wxOK | wxICON_INFORMATION);
+    // Get date range
+    wxDateTime startDate = m_startDatePicker->GetValue();
+    wxDateTime endDate = m_endDatePicker->GetValue();
+    
+    // Convert wxDateTime to time_t
+    std::time_t startTime = startDate.GetTicks();
+    std::time_t endTime = endDate.GetTicks();
+    
+    if (startTime > endTime) {
+        wxMessageBox("Start date cannot be later than end date!", "Error", 
+                    wxOK | wxICON_ERROR);
+        return;
+    }
+    
+    // Create file dialog to save CSV
+    wxFileDialog saveDialog(this, "Export Statistics to CSV", "", "",
+                           "CSV files (*.csv)|*.csv",
+                           wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+    
+    if (saveDialog.ShowModal() == wxID_CANCEL) {
+        return;
+    }
+    
+    wxString filePath = saveDialog.GetPath();
+    
+    try {
+        // Generate CSV data using statistics controller
+        if (!m_bookingController) {
+            wxMessageBox("Booking controller not available!", "Error", 
+                        wxOK | wxICON_ERROR);
+            return;
+        }
+        
+        // Create enhanced CSV with court statistics
+        std::ostringstream csvContent;
+        
+        // Header information
+        csvContent << "# Badminton Court Management System - Statistics Export\n";
+        csvContent << "# Export Date: " << wxDateTime::Now().FormatISODate() << "\n";
+        csvContent << "# Period: " << startDate.FormatISODate() << " to " << endDate.FormatISODate() << "\n";
+        csvContent << "\n";
+        
+        // Summary section
+        csvContent << "SUMMARY\n";
+        csvContent << "Metric,Value\n";
+        
+        // Calculate summary data
+        auto allBookings = m_bookingController->getAllBookings();
+        int totalBookings = 0;
+        double totalRevenue = 0.0;
+        double totalHours = 0.0;
+        
+        for (const auto& booking : allBookings) {
+            if (!booking || booking->getStatus() == BookingStatus::CANCELLED) {
+                continue;
+            }
+            
+            std::time_t bookingTime = booking->getBookingDate();
+            if (bookingTime >= startTime && bookingTime <= endTime) {
+                totalBookings++;
+                totalRevenue += booking->getTotalAmount();
+                totalHours += booking->getDurationHours();
+            }
+        }
+        
+        csvContent << "Total Bookings," << totalBookings << "\n";
+        csvContent << "Total Revenue," << std::fixed << std::setprecision(2) << totalRevenue << " VND\n";
+        csvContent << "Total Hours," << std::fixed << std::setprecision(1) << totalHours << "\n";
+        
+        if (totalBookings > 0) {
+            csvContent << "Average Revenue per Booking," << std::fixed << std::setprecision(2) 
+                      << (totalRevenue / totalBookings) << " VND\n";
+        }
+        
+        csvContent << "\n";
+        
+        // Court usage section
+        csvContent << "COURT USAGE STATISTICS\n";
+        csvContent << "Court,Bookings,Revenue (VND),Usage Hours,Usage Rate (%)\n";
+        
+        auto courts = m_courtController->getAllCourts();
+        for (const auto& court : courts) {
+            if (!court) continue;
+            
+            int courtBookings = 0;
+            double courtRevenue = 0.0;
+            double courtHours = 0.0;
+            
+            for (const auto& booking : allBookings) {
+                if (!booking || booking->getStatus() == BookingStatus::CANCELLED) {
+                    continue;
+                }
+                
+                std::time_t bookingTime = booking->getBookingDate();
+                if (bookingTime >= startTime && bookingTime <= endTime && 
+                    booking->getCourtId() == court->getId()) {
+                    courtBookings++;
+                    courtRevenue += booking->getTotalAmount();
+                    courtHours += booking->getDurationHours();
+                }
+            }
+            
+            // Calculate usage rate (assuming 12 hours available per day)
+            int daysDiff = static_cast<int>((endTime - startTime) / (24 * 3600)) + 1;
+            double maxPossibleHours = daysDiff * 12.0;
+            double usageRate = maxPossibleHours > 0 ? (courtHours / maxPossibleHours) * 100.0 : 0.0;
+            
+            csvContent << court->getName() << "," << courtBookings << ","
+                      << std::fixed << std::setprecision(2) << courtRevenue << ","
+                      << std::fixed << std::setprecision(1) << courtHours << ","
+                      << std::fixed << std::setprecision(1) << usageRate << "\n";
+        }
+        
+        csvContent << "\n";
+        
+        // Daily breakdown section
+        csvContent << "DAILY BREAKDOWN\n";
+        csvContent << "Date,Bookings,Revenue (VND),Hours\n";
+        
+        // Group bookings by date
+        std::map<std::string, std::tuple<int, double, double>> dailyData;
+        
+        for (const auto& booking : allBookings) {
+            if (!booking || booking->getStatus() == BookingStatus::CANCELLED) {
+                continue;
+            }
+            
+            std::time_t bookingTime = booking->getBookingDate();
+            if (bookingTime >= startTime && bookingTime <= endTime) {
+                // Format date as YYYY-MM-DD
+                std::tm* tm = std::localtime(&bookingTime);
+                char dateStr[11];
+                std::strftime(dateStr, sizeof(dateStr), "%Y-%m-%d", tm);
+                
+                auto& dayData = dailyData[dateStr];
+                std::get<0>(dayData)++; // bookings
+                std::get<1>(dayData) += booking->getTotalAmount(); // revenue
+                std::get<2>(dayData) += booking->getDurationHours(); // hours
+            }
+        }
+        
+        for (const auto& dayPair : dailyData) {
+            csvContent << dayPair.first << ","
+                      << std::get<0>(dayPair.second) << ","
+                      << std::fixed << std::setprecision(2) << std::get<1>(dayPair.second) << ","
+                      << std::fixed << std::setprecision(1) << std::get<2>(dayPair.second) << "\n";
+        }
+        
+        // Write to file
+        wxFile file(filePath, wxFile::write);
+        if (!file.IsOpened()) {
+            wxMessageBox("Failed to create export file!", "Error", 
+                        wxOK | wxICON_ERROR);
+            return;
+        }
+        
+        file.Write(csvContent.str());
+        file.Close();
+        
+        wxMessageBox(wxString::Format("Statistics exported successfully to:\n%s", filePath), 
+                    "Export Complete", wxOK | wxICON_INFORMATION);
+        
+    } catch (const std::exception& e) {
+        wxMessageBox(wxString::Format("Export failed: %s", e.what()), "Error", 
+                    wxOK | wxICON_ERROR);
+    }
 }
 
 void StatisticsPanel::RefreshData()

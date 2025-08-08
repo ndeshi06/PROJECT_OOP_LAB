@@ -16,11 +16,11 @@ echo "Using wxWidgets at: $WXWIN"
 
 # Cờ biên dịch
 CXX_FLAGS="-std=c++17 -w -O2"
-WX_CXXFLAGS="-I$WXWIN/include -I$WXWIN/lib/wx/include/osx_cocoa-unicode-3.2 -D__WXMAC__"
+WX_CXXFLAGS="`$WXWIN/wx-config --cxxflags`"
 INCLUDE_FLAGS="-I$INCLUDE_DIR"
 
 # Thư viện wxWidgets trên macOS
-WX_LIBS="-L$WXWIN/lib -framework wxBaseu-3.2 -framework wxCoreu-3.2 -framework wxAdvu-3.2"
+WX_LIBS="`$WXWIN/wx-config --libs`"
 
 # ========== Kiểm tra môi trường ==========
 

@@ -73,8 +73,7 @@ void BadmintonApp::SetupNotifications() {
 }
 
 void BadmintonApp::LoadInitialData() {
-    // Load data from files/database
-    m_courtController->loadCourts();
+    // Load data from files/database (courts are already loaded in CourtController constructor)
     BookingManager::getInstance().loadBookings();
     
     // Note: Default admin user creation is handled in AuthController constructor
@@ -82,26 +81,10 @@ void BadmintonApp::LoadInitialData() {
     
     // Create default courts if none exist (only once)
     if (m_courtController->getAllCourts().empty()) {
-        // Check if courts file exists to avoid recreating
-        std::vector<std::string> possiblePaths = {
-            "data/courts.txt",                    // Current directory
-            "../data/courts.txt",                 // Parent directory
-            "build/data/courts.txt",              // Build subdirectory
-        };
-        std::ifstream courtsFile;
-        for (const auto& path : possiblePaths) {
-            courtsFile.open(path);
-            if (courtsFile) {
-                break;  // Stop at the first valid path
-            }
-        }
-        if (!courtsFile.is_open() || courtsFile.peek() == std::ifstream::traits_type::eof()) {
-            // Only create default courts if file doesn't exist
-            m_courtController->addCourt("Court 1", "Standard badminton court", 50000.0);
-            m_courtController->addCourt("Court 2", "Premium badminton court", 75000.0);
-            m_courtController->addCourt("Court 3", "VIP badminton court", 100000.0);
-        }
-        courtsFile.close();
+        // Only create default courts if no courts were loaded
+        m_courtController->addCourt("Court 1", "Standard badminton court", 50000.0);
+        m_courtController->addCourt("Court 2", "Premium badminton court", 75000.0);
+        m_courtController->addCourt("Court 3", "VIP badminton court", 100000.0);
     }
 }
 
