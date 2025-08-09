@@ -210,10 +210,11 @@ This project is developed for educational purposes as part of an Object-Oriented
 ## 👥 Authors
   This application is developed by Group 8 - 24C06.
 ### Contributors
-- **Vo Nguyen Khoa** - *Feature development, documentation* - [GitHub Profile](https://github.com/nguyenkhoa838)
+- **Vo Nguyen Khoa** - *Feature development, code review* - [GitHub Profile](https://github.com/nguyenkhoa838)
 - **Tran Gia Phuc** - *code review, testing, documentation* - [GitHub Profile](https://github.com/tgphuc1901)
 - **Trinh Tan Phat** - *Bug fixes, documentation* - [GitHub Profile](https://github.com/ttphat-fitus)
 - **Do Duc Thinh** - *Initial development, GUI design, feature development* - [GitHub Profile](https://github.com/ndeshi06)
+- **Chau Vu Trung** - *GUI design, feature development* - [GitHub Profile](https://github.com/CVTrung)
 
 ## 🙏 Acknowledgments
 - wxWidgets development team for the excellent GUI framework
