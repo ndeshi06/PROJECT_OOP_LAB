@@ -94,9 +94,6 @@ if %ERRORLEVEL% neq 0 goto :error
 g++ %CXX_FLAGS% %INCLUDE_FLAGS% %WX_CXXFLAGS% -c %SRC_DIR%\controllers\BookingController.cpp -o %OBJ_DIR%\BookingController.o
 if %ERRORLEVEL% neq 0 goto :error
 
-g++ %CXX_FLAGS% %INCLUDE_FLAGS% %WX_CXXFLAGS% -c %SRC_DIR%\controllers\NotificationController.cpp -o %OBJ_DIR%\NotificationController.o
-if %ERRORLEVEL% neq 0 goto :error
-
 g++ %CXX_FLAGS% %INCLUDE_FLAGS% %WX_CXXFLAGS% -c %SRC_DIR%\controllers\StatisticsController.cpp -o %OBJ_DIR%\StatisticsController.o
 if %ERRORLEVEL% neq 0 goto :error
 
@@ -152,7 +149,6 @@ g++ %CXX_FLAGS% ^
     %OBJ_DIR%\AuthController.o ^
     %OBJ_DIR%\CourtController.o ^
     %OBJ_DIR%\BookingController.o ^
-    %OBJ_DIR%\NotificationController.o ^
     %OBJ_DIR%\StatisticsController.o ^
     %OBJ_DIR%\BookingManager.o ^
     %OBJ_DIR%\NotificationObserver.o ^

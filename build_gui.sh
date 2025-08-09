@@ -63,7 +63,6 @@ compile "$SRC_DIR/models/Statistics.cpp" "$OBJ_DIR/Statistics.o"
 compile "$SRC_DIR/controllers/AuthController.cpp" "$OBJ_DIR/AuthController.o"
 compile "$SRC_DIR/controllers/CourtController.cpp" "$OBJ_DIR/CourtController.o"
 compile "$SRC_DIR/controllers/BookingController.cpp" "$OBJ_DIR/BookingController.o"
-compile "$SRC_DIR/controllers/NotificationController.cpp" "$OBJ_DIR/NotificationController.o"
 compile "$SRC_DIR/controllers/StatisticsController.cpp" "$OBJ_DIR/StatisticsController.o"
 
 # Compile patterns
