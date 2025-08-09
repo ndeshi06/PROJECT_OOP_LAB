@@ -203,24 +203,19 @@ Enable debug output by adding `-DDEBUG` flag to build script:
 CXXFLAGS="$CXXFLAGS -DDEBUG"
 ```
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/new-feature`)
-3. Commit your changes (`git commit -am 'Add new feature'`)
-4. Push to the branch (`git push origin feature/new-feature`)
-5. Create a Pull Request
-
 ## 📄 License
 
 This project is developed for educational purposes as part of an Object-Oriented Programming course.
 
 ## 👥 Authors
-
-- **ndeshi06** - *Initial development* - [GitHub Profile](https://github.com/ndeshi06)
+  This application is developed by Group 8 - 24C06.
+### Contributors
+- **Vo Nguyen Khoa** - *Feature development, documentation* - [GitHub Profile](https://github.com/nguyenkhoa838)
+- **Tran Gia Phuc** - *code review, testing, documentation* - [GitHub Profile](https://github.com/tgphuc1901)
+- **Trinh Tan Phat** - *Bug fixes, documentation* - [GitHub Profile](https://github.com/ttphat-fitus)
+- **Do Duc Thinh** - *Initial development, GUI design, feature development* - [GitHub Profile](https://github.com/ndeshi06)
 
 ## 🙏 Acknowledgments
-
 - wxWidgets development team for the excellent GUI framework
 - C++ community for best practices and design patterns
 - Educational institution for project requirements and guidance
@@ -231,7 +226,3 @@ For issues, questions, or contributions:
 - Create an issue on GitHub
 - Check troubleshooting section above
 - Review code documentation in source files
-
----
-
-**Note**: This application is optimized for macOS Apple Silicon. For other platforms, additional configuration may be required.
