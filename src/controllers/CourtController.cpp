@@ -12,6 +12,13 @@ CourtController::CourtController()
 CourtController::~CourtController()
 {
     saveCourts();
+
+    // Clean up allocated memory
+    for (auto court : m_courts)
+    {
+        delete court;
+    }
+    m_courts.clear();
 }
 
 bool CourtController::addCourt(const std::string &name, const std::string &description,
@@ -27,7 +34,7 @@ bool CourtController::addCourt(const std::string &name, const std::string &descr
         return false;
     }
 
-    auto newCourt = std::make_shared<Court>(name, description, hourlyRate, status);
+    auto newCourt = new Court(name, description, hourlyRate, status);
     newCourt->setId(generateCourtId());
 
     m_courts.push_back(newCourt);
@@ -64,13 +71,14 @@ bool CourtController::updateCourt(int courtId, const Court &updatedCourt)
 bool CourtController::deleteCourt(int courtId)
 {
     auto it = std::find_if(m_courts.begin(), m_courts.end(),
-                           [courtId](const CourtPtr &court)
+                           [courtId](const Court *court)
                            {
                                return court->getId() == courtId;
                            });
 
     if (it != m_courts.end())
     {
+        delete *it; // Clean up memory
         m_courts.erase(it);
         saveCourts(); // Save changes immediately
         return true;
@@ -79,10 +87,10 @@ bool CourtController::deleteCourt(int courtId)
     return false;
 }
 
-CourtPtr CourtController::getCourt(int courtId) const
+Court *CourtController::getCourt(int courtId) const
 {
     auto it = std::find_if(m_courts.begin(), m_courts.end(),
-                           [courtId](const CourtPtr &court)
+                           [courtId](const Court *court)
                            {
                                return court->getId() == courtId;
                            });
@@ -90,17 +98,17 @@ CourtPtr CourtController::getCourt(int courtId) const
     return (it != m_courts.end()) ? *it : nullptr;
 }
 
-std::vector<CourtPtr> CourtController::getAllCourts() const
+std::vector<Court *> CourtController::getAllCourts() const
 {
     return m_courts;
 }
 
-std::vector<CourtPtr> CourtController::getAvailableCourts() const
+std::vector<Court *> CourtController::getAvailableCourts() const
 {
-    std::vector<CourtPtr> availableCourts;
+    std::vector<Court *> availableCourts;
 
     std::copy_if(m_courts.begin(), m_courts.end(), std::back_inserter(availableCourts),
-                 [](const CourtPtr &court)
+                 [](const Court *court)
                  {
                      return court->isAvailable();
                  });
@@ -133,7 +141,7 @@ bool CourtController::validateCourtData(const std::string &name, double hourlyRa
 bool CourtController::isCourtNameTaken(const std::string &name, int excludeId) const
 {
     return std::any_of(m_courts.begin(), m_courts.end(),
-                       [&name, excludeId](const CourtPtr &court)
+                       [&name, excludeId](const Court *court)
                        {
                            return court->getName() == name && court->getId() != excludeId;
                        });
@@ -164,7 +172,7 @@ void CourtController::loadCourts()
             {
                 try
                 {
-                    auto court = std::make_shared<Court>();
+                    auto court = new Court();
                     court->setId(std::stoi(tokens[0]));
                     court->setName(tokens[1]);
                     court->setDescription(tokens[2]);

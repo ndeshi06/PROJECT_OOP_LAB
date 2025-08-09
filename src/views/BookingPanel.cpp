@@ -24,15 +24,15 @@ wxBEGIN_EVENT_TABLE(BookingPanel, wxPanel)
     EVT_DATE_CHANGED(ID_DATE_PICKER, BookingPanel::OnDateChanged)
 wxEND_EVENT_TABLE()
 
-    BookingPanel::BookingPanel(wxWindow *parent,
-                                std::shared_ptr<BookingController> bookingController,
-                                std::shared_ptr<CourtController> courtController,
-                                std::shared_ptr<AuthController> authController)
-    : wxPanel(parent, wxID_ANY),
-      m_bookingController(bookingController),
-      m_courtController(courtController),
-      m_authController(authController),
-      m_selectedBookingId(-1)
+BookingPanel::BookingPanel(wxWindow *parent,
+                           BookingController* bookingController,
+                           CourtController* courtController,
+                           AuthController* authController)
+: wxPanel(parent, wxID_ANY),
+    m_bookingController(bookingController),
+    m_courtController(courtController),
+    m_authController(authController),
+    m_selectedBookingId(-1)
 {
     CreateUI();
     BindEvents();
@@ -419,7 +419,7 @@ void BookingPanel::RefreshAvailableSlots()
     // Get all bookings for this court on this date
     auto allBookings = m_bookingController->getAllBookings();
     std::vector<std::pair<int, int>> bookedSlots;                           // start minutes, end minutes
-    std::map<std::pair<int, int>, std::shared_ptr<Booking>> slotBookingMap; // map slot to booking details
+    std::map<std::pair<int, int>, Booking*> slotBookingMap; // map slot to booking details
 
     for (const auto &booking : allBookings)
     {
@@ -465,7 +465,7 @@ void BookingPanel::RefreshAvailableSlots()
 
         // Check if this slot conflicts with any booking
         bool isAvailable = !isPastTime; // Not available if in the past
-        std::shared_ptr<Booking> conflictingBooking = nullptr;
+        Booking* conflictingBooking = nullptr;
 
         if (!isPastTime)
         {
@@ -679,7 +679,7 @@ void BookingPanel::OnCancelBooking(wxCommandEvent &event)
         auto userBookings = m_bookingController->getUserBookings(
             m_authController->getCurrentUser()->getId());
 
-        std::shared_ptr<Booking> selectedBooking = nullptr;
+        Booking* selectedBooking = nullptr;
         for (const auto &booking : userBookings)
         {
             if (booking && booking->getId() == m_selectedBookingId)

@@ -20,14 +20,14 @@ wxBEGIN_EVENT_TABLE(StatisticsPanel, wxPanel)
     EVT_BUTTON(ID_EXPORT_STATS, StatisticsPanel::OnExportStats)
 wxEND_EVENT_TABLE()
 
-    StatisticsPanel::StatisticsPanel(wxWindow *parent,
-                                     std::shared_ptr<BookingController> bookingController,
-                                     std::shared_ptr<CourtController> courtController,
-                                     std::shared_ptr<AuthController> authController)
-    : wxPanel(parent, wxID_ANY),
-      m_bookingController(bookingController),
-      m_courtController(courtController),
-      m_authController(authController)
+StatisticsPanel::StatisticsPanel(wxWindow *parent,
+                                    BookingController* bookingController,
+                                    CourtController* courtController,
+                                    AuthController* authController)
+: wxPanel(parent, wxID_ANY),
+    m_bookingController(bookingController),
+    m_courtController(courtController),
+    m_authController(authController)
 {
     CreateUI();
     BindEvents();
@@ -35,6 +35,7 @@ wxEND_EVENT_TABLE()
 }
 
 StatisticsPanel::~StatisticsPanel() {}
+
 void StatisticsPanel::CreateUI()
 {
     CreateDateControls();
@@ -346,7 +347,7 @@ void StatisticsPanel::GenerateStatistics()
     auto courts = m_courtController->getAllCourts();
 
     // Filter out cancelled bookings
-    std::vector<std::shared_ptr<Booking>> activeBookings;
+    std::vector<Booking*> activeBookings;
     for (const auto &booking : allBookings)
     {
         if (booking && booking->getStatus() != BookingStatus::CANCELLED)
@@ -402,7 +403,7 @@ void StatisticsPanel::PopulateStatsList()
     auto allBookings = m_bookingController->getAllBookings();
 
     // Filter out cancelled bookings
-    std::vector<std::shared_ptr<Booking>> activeBookings;
+    std::vector<Booking*> activeBookings;
     for (const auto &booking : allBookings)
     {
         if (booking && booking->getStatus() != BookingStatus::CANCELLED)

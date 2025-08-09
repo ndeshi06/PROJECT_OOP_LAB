@@ -18,24 +18,24 @@ wxBEGIN_EVENT_TABLE(LoginFrame, wxFrame)
     EVT_MENU(wxID_EXIT, LoginFrame::OnExit)
 wxEND_EVENT_TABLE()
 
-    LoginFrame::LoginFrame(std::shared_ptr<AuthController> authController,
-                            std::shared_ptr<CourtController> courtController,
-                            std::shared_ptr<BookingController> bookingController)
-    : wxFrame(nullptr, wxID_ANY, "Badminton Court Management - Login",
-              wxDefaultPosition, wxSize(400, 300)),
-      m_authController(authController),
-      m_courtController(courtController),
-      m_bookingController(bookingController),
-      m_mainPanel(nullptr),
-      m_emailCtrl(nullptr),
-      m_passwordCtrl(nullptr),
-      m_roleChoice(nullptr),
-      m_loginBtn(nullptr),
-      m_registerBtn(nullptr),
-      m_statusLabel(nullptr),
-      m_mainSizer(nullptr),
-      m_formSizer(nullptr),
-      m_buttonSizer(nullptr)
+LoginFrame::LoginFrame(AuthController* authController,
+                        CourtController* courtController,
+                        BookingController* bookingController)
+: wxFrame(nullptr, wxID_ANY, "Badminton Court Management - Login",
+            wxDefaultPosition, wxSize(400, 300)),
+    m_authController(authController),
+    m_courtController(courtController),
+    m_bookingController(bookingController),
+    m_mainPanel(nullptr),
+    m_emailCtrl(nullptr),
+    m_passwordCtrl(nullptr),
+    m_roleChoice(nullptr),
+    m_loginBtn(nullptr),
+    m_registerBtn(nullptr),
+    m_statusLabel(nullptr),
+    m_mainSizer(nullptr),
+    m_formSizer(nullptr),
+    m_buttonSizer(nullptr)
 {
 
     CreateUI();

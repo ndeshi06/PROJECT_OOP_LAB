@@ -54,47 +54,47 @@ bool BookingController::modifyBooking(int bookingId, std::time_t newStartTime,
     return m_bookingManager.modifyBooking(bookingId, modifiedBooking);
 }
 
-BookingPtr BookingController::getBooking(int bookingId) const
+Booking* BookingController::getBooking(int bookingId) const
 {
     return m_bookingManager.getBooking(bookingId);
 }
 
-std::vector<BookingPtr> BookingController::getAllBookings() const
+std::vector<Booking*> BookingController::getAllBookings() const
 {
     return m_bookingManager.getAllBookings();
 }
 
-std::vector<BookingPtr> BookingController::getUserBookings(int userId) const
+std::vector<Booking*> BookingController::getUserBookings(int userId) const
 {
     return m_bookingManager.getBookingsByUser(userId);
 }
 
-std::vector<BookingPtr> BookingController::getCourtBookings(int courtId) const
+std::vector<Booking*> BookingController::getCourtBookings(int courtId) const
 {
     return m_bookingManager.getBookingsByCourt(courtId);
 }
 
-std::vector<BookingPtr> BookingController::getBookingsByDate(std::time_t date) const
+std::vector<Booking*> BookingController::getBookingsByDate(std::time_t date) const
 {
     return m_bookingManager.getBookingsByDate(date);
 }
 
-std::vector<BookingPtr> BookingController::getUpcomingBookings(int userId) const
+std::vector<Booking*> BookingController::getUpcomingBookings(int userId) const
 {
     auto userBookings = getUserBookings(userId);
-    std::vector<BookingPtr> upcomingBookings;
+    std::vector<Booking*> upcomingBookings;
 
     std::time_t now = std::time(nullptr);
 
     std::copy_if(userBookings.begin(), userBookings.end(), std::back_inserter(upcomingBookings),
-                 [now](const BookingPtr &booking)
+                 [now](const Booking* booking)
                  {
                      return booking->getStartTime() > now && booking->isActive();
                  });
 
     // Sort by start time
     std::sort(upcomingBookings.begin(), upcomingBookings.end(),
-              [](const BookingPtr &a, const BookingPtr &b)
+              [](const Booking* a, const Booking* b)
               {
                   return a->getStartTime() < b->getStartTime();
               });

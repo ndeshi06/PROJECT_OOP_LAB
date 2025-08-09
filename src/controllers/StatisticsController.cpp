@@ -7,12 +7,15 @@
 
 StatisticsController::StatisticsController()
 {
-    m_statistics = std::make_unique<Statistics>();
+    m_statistics = new Statistics();
     // Auto-collect data on initialization
     collectDataFromBookingManager();
 }
 
-StatisticsController::~StatisticsController() {}
+StatisticsController::~StatisticsController() 
+{
+    delete m_statistics;
+}
 
 BookingStats StatisticsController::generateBookingStats(std::time_t startDate, std::time_t endDate)
 {
@@ -66,10 +69,11 @@ void StatisticsController::collectDataFromBookingManager()
     auto allBookings = bookingManager.getAllBookings();
 
     // Clear existing statistics
-    m_statistics = std::make_unique<Statistics>();
+    delete m_statistics;
+    m_statistics = new Statistics();
 
     // Group bookings by date and court for statistics
-    std::map<std::time_t, std::map<int, std::vector<BookingPtr>>> dailyCourtBookings;
+    std::map<std::time_t, std::map<int, std::vector<Booking*>>> dailyCourtBookings;
 
     for (const auto &booking : allBookings)
     {

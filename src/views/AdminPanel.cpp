@@ -24,15 +24,15 @@ wxBEGIN_EVENT_TABLE(AdminPanel, wxPanel)
     EVT_DATE_CHANGED(ID_END_DATE_PICKER, AdminPanel::OnFilterByDate)
 wxEND_EVENT_TABLE()
 
-    AdminPanel::AdminPanel(wxWindow *parent,
-                            std::shared_ptr<BookingController> bookingController,
-                            std::shared_ptr<CourtController> courtController,
-                            std::shared_ptr<AuthController> authController)
-    : wxPanel(parent, wxID_ANY),
-      m_bookingController(bookingController),
-      m_courtController(courtController),
-      m_authController(authController),
-      m_selectedBookingId(-1)
+AdminPanel::AdminPanel(wxWindow *parent,
+                        BookingController* bookingController,
+                        CourtController* courtController,
+                        AuthController* authController)
+: wxPanel(parent, wxID_ANY),
+    m_bookingController(bookingController),
+    m_courtController(courtController),
+    m_authController(authController),
+    m_selectedBookingId(-1)
 {
     CreateUI();
     RefreshData();

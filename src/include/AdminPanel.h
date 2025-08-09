@@ -4,20 +4,19 @@
 #include <wx/datectrl.h>
 #include <wx/dateevt.h>
 #include <wx/choice.h>
-#include <memory>
-
 // Forward declarations
 class BookingController;
 class CourtController;
 class AuthController;
 class Booking;
 
-class AdminPanel : public wxPanel {
+class AdminPanel : public wxPanel
+{
 public:
-    AdminPanel(wxWindow* parent,
-               std::shared_ptr<BookingController> bookingController,
-               std::shared_ptr<CourtController> courtController,
-               std::shared_ptr<AuthController> authController);
+    AdminPanel(wxWindow *parent,
+               BookingController *bookingController,
+               CourtController *courtController,
+               AuthController *authController);
     ~AdminPanel();
 
     void RefreshData();
@@ -30,13 +29,13 @@ private:
     void CreateStatisticsView();
 
     // Event handlers
-    void OnRefreshData(wxCommandEvent& event);
-    void OnFilterByDate(wxDateEvent& event);
-    void OnFilterByCourt(wxCommandEvent& event);
-    void OnFilterByUser(wxCommandEvent& event);
-    void OnExportData(wxCommandEvent& event);
-    void OnBookingSelected(wxListEvent& event);
-    void OnCancelBooking(wxCommandEvent& event);
+    void OnRefreshData(wxCommandEvent &event);
+    void OnFilterByDate(wxDateEvent &event);
+    void OnFilterByCourt(wxCommandEvent &event);
+    void OnFilterByUser(wxCommandEvent &event);
+    void OnExportData(wxCommandEvent &event);
+    void OnBookingSelected(wxListEvent &event);
+    void OnCancelBooking(wxCommandEvent &event);
 
     // Data methods
     void RefreshBookingHistory();
@@ -46,33 +45,34 @@ private:
     wxString FormatCurrency(double amount);
 
     // Member variables
-    std::shared_ptr<BookingController> m_bookingController;
-    std::shared_ptr<CourtController> m_courtController;
-    std::shared_ptr<AuthController> m_authController;
+    BookingController* m_bookingController;
+    CourtController* m_courtController;
+    AuthController* m_authController;
 
     // UI Controls
-    wxBoxSizer* m_mainSizer;
-    wxListCtrl* m_bookingHistoryList;
-    wxDatePickerCtrl* m_startDatePicker;
-    wxDatePickerCtrl* m_endDatePicker;
-    wxChoice* m_courtFilter;
-    wxChoice* m_userFilter;
-    wxChoice* m_statusFilter;
-    
+    wxBoxSizer *m_mainSizer;
+    wxListCtrl *m_bookingHistoryList;
+    wxDatePickerCtrl *m_startDatePicker;
+    wxDatePickerCtrl *m_endDatePicker;
+    wxChoice *m_courtFilter;
+    wxChoice *m_userFilter;
+    wxChoice *m_statusFilter;
+
     // Buttons
-    wxButton* m_refreshBtn;
-    wxButton* m_exportBtn;
-    wxButton* m_cancelBookingBtn;
-    
+    wxButton *m_refreshBtn;
+    wxButton *m_exportBtn;
+    wxButton *m_cancelBookingBtn;
+
     // Statistics
-    wxStaticText* m_totalBookingsLabel;
-    wxStaticText* m_totalRevenueLabel;
-    wxStaticText* m_activeBookingsLabel;
-    
+    wxStaticText *m_totalBookingsLabel;
+    wxStaticText *m_totalRevenueLabel;
+    wxStaticText *m_activeBookingsLabel;
+
     int m_selectedBookingId;
 
     // Event IDs
-    enum {
+    enum
+    {
         ID_REFRESH_DATA = 7000,
         ID_FILTER_DATE,
         ID_FILTER_COURT,

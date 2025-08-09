@@ -13,8 +13,8 @@ wxBEGIN_EVENT_TABLE(RegisterDialog, wxDialog)
     EVT_BUTTON(ID_CANCEL, RegisterDialog::OnCancel)
 wxEND_EVENT_TABLE()
 
-    RegisterDialog::RegisterDialog(wxWindow *parent)
-    : wxDialog(parent, wxID_ANY, "Register New Account", wxDefaultPosition, wxSize(400, 350))
+RegisterDialog::RegisterDialog(wxWindow *parent)
+: wxDialog(parent, wxID_ANY, "Register New Account", wxDefaultPosition, wxSize(400, 350))
 {
     // Create main sizer
     wxBoxSizer *mainSizer = new wxBoxSizer(wxVERTICAL);

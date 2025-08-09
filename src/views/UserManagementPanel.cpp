@@ -12,11 +12,11 @@ wxBEGIN_EVENT_TABLE(UserManagementPanel, wxPanel)
     EVT_LIST_ITEM_SELECTED(ID_USER_LIST, UserManagementPanel::OnUserSelected)
 wxEND_EVENT_TABLE()
 
-    UserManagementPanel::UserManagementPanel(wxWindow *parent,
-                                             std::shared_ptr<AuthController> authController)
-    : wxPanel(parent, wxID_ANY),
-      m_authController(authController),
-      m_selectedUserId(-1)
+UserManagementPanel::UserManagementPanel(wxWindow *parent,
+                                            AuthController* authController)
+: wxPanel(parent, wxID_ANY),
+    m_authController(authController),
+    m_selectedUserId(-1)
 {
     CreateUI();
     BindEvents();

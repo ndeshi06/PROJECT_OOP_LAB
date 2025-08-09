@@ -17,14 +17,14 @@ wxBEGIN_EVENT_TABLE(CourtManagementPanel, wxPanel)
     EVT_LIST_ITEM_DESELECTED(ID_COURT_LIST, CourtManagementPanel::OnCourtDeselected)
 wxEND_EVENT_TABLE()
 
-    CourtManagementPanel::CourtManagementPanel(wxWindow *parent,
-                                                std::shared_ptr<CourtController> courtController,
-                                                std::shared_ptr<AuthController> authController)
-    : wxPanel(parent, wxID_ANY),
-      m_courtController(courtController),
-      m_authController(authController),
-      m_selectedCourtId(-1),
-      m_isEditing(false)
+CourtManagementPanel::CourtManagementPanel(wxWindow *parent,
+                                            CourtController* courtController,
+                                            AuthController* authController)
+: wxPanel(parent, wxID_ANY),
+    m_courtController(courtController),
+    m_authController(authController),
+    m_selectedCourtId(-1),
+    m_isEditing(false)
 {
     CreateUI();
     BindEvents();

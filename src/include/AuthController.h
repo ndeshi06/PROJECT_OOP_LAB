@@ -2,13 +2,12 @@
 #include "User.h"
 #include <string>
 #include <vector>
-#include <memory>
 
 class AuthController
 {
 private:
-    UserPtr m_currentUser;
-    std::vector<UserPtr> m_users;
+    User* m_currentUser;
+    std::vector<User*> m_users;
 
 public:
     AuthController();
@@ -22,14 +21,14 @@ public:
                       UserRole role = UserRole::CUSTOMER);
 
     // User management
-    UserPtr getCurrentUser() const { return m_currentUser; }
+    User* getCurrentUser() const { return m_currentUser; }
     bool isLoggedIn() const { return m_currentUser != nullptr; }
     bool isAdmin() const { return m_currentUser && m_currentUser->isAdmin(); }
 
     // User operations
-    std::vector<UserPtr> getAllUsers() const;
-    UserPtr getUserById(int userId) const;
-    UserPtr getUserByEmail(const std::string &email) const;
+    std::vector<User*> getAllUsers() const;
+    User* getUserById(int userId) const;
+    User* getUserByEmail(const std::string &email) const;
     bool updateUser(int userId, const User &updatedUser);
     bool deleteUser(int userId);
     bool changeUserRole(int userId, UserRole newRole);

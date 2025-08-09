@@ -2,11 +2,11 @@
 #include "Statistics.h"
 #include "BookingManager.h"
 #include <vector>
-#include <memory>
 
-class StatisticsController {
+class StatisticsController
+{
 private:
-    std::unique_ptr<Statistics> m_statistics;
+    Statistics* m_statistics;
 
 public:
     StatisticsController();

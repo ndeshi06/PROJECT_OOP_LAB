@@ -1,16 +1,17 @@
 #pragma once
 #include <string>
-#include <memory>
 #include <ctime>
 
-enum class BookingStatus {
+enum class BookingStatus
+{
     PENDING,
     CONFIRMED,
     CANCELLED,
     COMPLETED
 };
 
-class Booking {
+class Booking
+{
 private:
     int m_id;
     int m_userId;
@@ -38,7 +39,7 @@ public:
     std::time_t getEndTime() const { return m_endTime; }
     double getTotalAmount() const { return m_totalAmount; }
     BookingStatus getStatus() const { return m_status; }
-    const std::string& getNotes() const { return m_notes; }
+    const std::string &getNotes() const { return m_notes; }
     std::time_t getCreatedAt() const { return m_createdAt; }
     std::time_t getUpdatedAt() const { return m_updatedAt; }
 
@@ -51,14 +52,12 @@ public:
     void setEndTime(std::time_t endTime) { m_endTime = endTime; }
     void setTotalAmount(double amount) { m_totalAmount = amount; }
     void setStatus(BookingStatus status);
-    void setNotes(const std::string& notes) { m_notes = notes; }
+    void setNotes(const std::string &notes) { m_notes = notes; }
 
     // Utility methods
     bool isActive() const;
     double getDurationHours() const;
     std::string getStatusString() const;
-    bool conflictsWith(const Booking& other) const;
+    bool conflictsWith(const Booking &other) const;
     void updateTimestamp();
 };
-
-using BookingPtr = std::shared_ptr<Booking>;

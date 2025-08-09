@@ -3,21 +3,46 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
-#include <fstream>
-#include <sstream>
 
-std::unique_ptr<BookingManager> BookingManager::m_instance = nullptr;
+BookingManager* BookingManager::m_instance = nullptr;
 std::mutex BookingManager::m_mutex;
+
+BookingManager::~BookingManager()
+{
+    // Clean up all bookings
+    for (Booking* booking : m_bookings)
+    {
+        delete booking;
+    }
+    m_bookings.clear();
+    
+    // Clean up all observers
+    for (NotificationObserver* observer : m_observers)
+    {
+        delete observer;
+    }
+    m_observers.clear();
+}
 
 BookingManager &BookingManager::getInstance()
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     if (m_instance == nullptr)
     {
-        m_instance = std::unique_ptr<BookingManager>(new BookingManager());
+        m_instance = new BookingManager();
         m_instance->loadBookings(); // Load data on first instantiation
     }
     return *m_instance;
+}
+
+void BookingManager::cleanup()
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (m_instance != nullptr)
+    {
+        delete m_instance;
+        m_instance = nullptr;
+    }
 }
 
 bool BookingManager::createBooking(const Booking &booking)
@@ -33,14 +58,13 @@ bool BookingManager::createBooking(const Booking &booking)
     }
 
     // Create a copy and assign ID, preserve status
-    Booking newBooking = booking;
-    generateBookingId(newBooking);
+    Booking* newBooking = new Booking(booking);
+    generateBookingId(*newBooking);
     // Ensure the status from the original booking is preserved
-    newBooking.setStatus(booking.getStatus());
+    newBooking->setStatus(booking.getStatus());
 
     // Add to bookings
-    auto bookingPtr = std::make_shared<Booking>(newBooking);
-    m_bookings.push_back(bookingPtr);
+    m_bookings.push_back(newBooking);
 
     // Sort by date
     sortBookingsByDate();
@@ -49,7 +73,7 @@ bool BookingManager::createBooking(const Booking &booking)
     saveBookings();
 
     // Notify observers
-    notifyObservers("Booking created", newBooking);
+    notifyObservers("Booking created", *newBooking);
 
     return true;
 }
@@ -57,7 +81,7 @@ bool BookingManager::createBooking(const Booking &booking)
 bool BookingManager::cancelBooking(int bookingId)
 {
     auto it = std::find_if(m_bookings.begin(), m_bookings.end(),
-                           [bookingId](const BookingPtr &booking)
+                           [bookingId](const Booking* booking)
                            {
                                return booking->getId() == bookingId;
                            });
@@ -76,7 +100,7 @@ bool BookingManager::cancelBooking(int bookingId)
 bool BookingManager::modifyBooking(int bookingId, const Booking &newBooking)
 {
     auto it = std::find_if(m_bookings.begin(), m_bookings.end(),
-                           [bookingId](const BookingPtr &booking)
+                           [bookingId](const Booking* booking)
                            {
                                return booking->getId() == bookingId;
                            });
@@ -110,10 +134,10 @@ bool BookingManager::modifyBooking(int bookingId, const Booking &newBooking)
     return false;
 }
 
-BookingPtr BookingManager::getBooking(int bookingId) const
+Booking* BookingManager::getBooking(int bookingId) const
 {
     auto it = std::find_if(m_bookings.begin(), m_bookings.end(),
-                           [bookingId](const BookingPtr &booking)
+                           [bookingId](const Booking* booking)
                            {
                                return booking->getId() == bookingId;
                            });
@@ -121,12 +145,12 @@ BookingPtr BookingManager::getBooking(int bookingId) const
     return (it != m_bookings.end()) ? *it : nullptr;
 }
 
-std::vector<BookingPtr> BookingManager::getBookingsByUser(int userId) const
+std::vector<Booking*> BookingManager::getBookingsByUser(int userId) const
 {
-    std::vector<BookingPtr> userBookings;
+    std::vector<Booking*> userBookings;
 
     std::copy_if(m_bookings.begin(), m_bookings.end(), std::back_inserter(userBookings),
-                 [userId](const BookingPtr &booking)
+                 [userId](const Booking* booking)
                  {
                      return booking->getUserId() == userId;
                  });
@@ -134,12 +158,12 @@ std::vector<BookingPtr> BookingManager::getBookingsByUser(int userId) const
     return userBookings;
 }
 
-std::vector<BookingPtr> BookingManager::getBookingsByCourt(int courtId) const
+std::vector<Booking*> BookingManager::getBookingsByCourt(int courtId) const
 {
-    std::vector<BookingPtr> courtBookings;
+    std::vector<Booking*> courtBookings;
 
     std::copy_if(m_bookings.begin(), m_bookings.end(), std::back_inserter(courtBookings),
-                 [courtId](const BookingPtr &booking)
+                 [courtId](const Booking* booking)
                  {
                      return booking->getCourtId() == courtId;
                  });
@@ -147,12 +171,12 @@ std::vector<BookingPtr> BookingManager::getBookingsByCourt(int courtId) const
     return courtBookings;
 }
 
-std::vector<BookingPtr> BookingManager::getBookingsByDate(std::time_t date) const
+std::vector<Booking*> BookingManager::getBookingsByDate(std::time_t date) const
 {
-    std::vector<BookingPtr> dateBookings;
+    std::vector<Booking*> dateBookings;
 
     std::copy_if(m_bookings.begin(), m_bookings.end(), std::back_inserter(dateBookings),
-                 [date](const BookingPtr &booking)
+                 [date](const Booking* booking)
                  {
                      // Compare dates (ignoring time)
                      std::time_t bookingDate = booking->getBookingDate();
@@ -170,7 +194,7 @@ std::vector<BookingPtr> BookingManager::getBookingsByDate(std::time_t date) cons
 bool BookingManager::isCourtAvailable(int courtId, std::time_t startTime, std::time_t endTime) const
 {
     return std::none_of(m_bookings.begin(), m_bookings.end(),
-                        [courtId, startTime, endTime](const BookingPtr &booking)
+                        [courtId, startTime, endTime](const Booking* booking)
                         {
                             if (booking->getCourtId() != courtId || !booking->isActive())
                             {
@@ -220,7 +244,7 @@ std::vector<std::pair<std::time_t, std::time_t>> BookingManager::getAvailableSlo
 bool BookingManager::hasConflict(const Booking &booking) const
 {
     return std::any_of(m_bookings.begin(), m_bookings.end(),
-                       [&booking](const BookingPtr &existingBooking)
+                       [&booking](const Booking* existingBooking)
                        {
                            return existingBooking->getId() != booking.getId() &&
                                   existingBooking->isActive() &&
@@ -228,12 +252,12 @@ bool BookingManager::hasConflict(const Booking &booking) const
                        });
 }
 
-void BookingManager::addObserver(std::shared_ptr<NotificationObserver> observer)
+void BookingManager::addObserver(NotificationObserver* observer)
 {
     m_observers.push_back(observer);
 }
 
-void BookingManager::removeObserver(std::shared_ptr<NotificationObserver> observer)
+void BookingManager::removeObserver(NotificationObserver* observer)
 {
     m_observers.erase(
         std::remove(m_observers.begin(), m_observers.end(), observer),
@@ -260,17 +284,17 @@ void BookingManager::notifyObservers(const std::string &message, const Booking &
     }
 }
 
-std::vector<BookingPtr> BookingManager::getAllBookings() const
+std::vector<Booking*> BookingManager::getAllBookings() const
 {
     return m_bookings;
 }
 
-std::vector<BookingPtr> BookingManager::getBookingsInDateRange(std::time_t startDate, std::time_t endDate) const
+std::vector<Booking*> BookingManager::getBookingsInDateRange(std::time_t startDate, std::time_t endDate) const
 {
-    std::vector<BookingPtr> rangeBookings;
+    std::vector<Booking*> rangeBookings;
 
     std::copy_if(m_bookings.begin(), m_bookings.end(), std::back_inserter(rangeBookings),
-                 [startDate, endDate](const BookingPtr &booking)
+                 [startDate, endDate](const Booking* booking)
                  {
                      std::time_t bookingDate = booking->getBookingDate();
                      return bookingDate >= startDate && bookingDate <= endDate;
@@ -333,7 +357,7 @@ void BookingManager::loadBookings()
         {
             try
             {
-                auto booking = std::make_shared<Booking>();
+                auto booking = new Booking();
                 booking->setId(std::stoi(tokens[0]));
                 booking->setUserId(std::stoi(tokens[1]));
                 booking->setCourtId(std::stoi(tokens[2]));
@@ -439,7 +463,7 @@ void BookingManager::generateBookingId(Booking &booking)
 void BookingManager::sortBookingsByDate()
 {
     std::sort(m_bookings.begin(), m_bookings.end(),
-              [](const BookingPtr &a, const BookingPtr &b)
+              [](const Booking* a, const Booking* b)
               {
                   return a->getStartTime() < b->getStartTime();
               });

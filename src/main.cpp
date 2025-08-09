@@ -59,18 +59,18 @@ int BadmintonApp::OnExit()
 
 void BadmintonApp::InitializeControllers()
 {
-    m_authController = std::make_shared<AuthController>();
-    m_courtController = std::make_shared<CourtController>();
-    m_bookingController = std::make_shared<BookingController>();
+    m_authController = new AuthController();
+    m_courtController = new CourtController();
+    m_bookingController = new BookingController();
 }
 
 void BadmintonApp::SetupNotifications()
 {
     // Create notification observers
-    m_emailObserver = std::make_shared<EmailNotificationObserver>(
+    m_emailObserver = new EmailNotificationObserver(
         "smtp.gmail.com", 587, "your-email@gmail.com", "your-password");
 
-    m_inAppObserver = std::make_shared<InAppNotificationObserver>(100);
+    m_inAppObserver = new InAppNotificationObserver(100);
 
     // Add observers to BookingManager
     BookingManager &bookingManager = BookingManager::getInstance();
@@ -139,4 +139,39 @@ void BadmintonApp::OnLogout()
 
     // Show login frame again
     ShowLoginFrame();
+}
+
+BadmintonApp::~BadmintonApp()
+{
+    // Clean up notification observers
+    if (m_emailObserver)
+    {
+        delete m_emailObserver;
+        m_emailObserver = nullptr;
+    }
+
+    if (m_inAppObserver)
+    {
+        delete m_inAppObserver;
+        m_inAppObserver = nullptr;
+    }
+
+    // Clean up controllers
+    if (m_authController)
+    {
+        delete m_authController;
+        m_authController = nullptr;
+    }
+
+    if (m_courtController)
+    {
+        delete m_courtController;
+        m_courtController = nullptr;
+    }
+
+    if (m_bookingController)
+    {
+        delete m_bookingController;
+        m_bookingController = nullptr;
+    }
 }

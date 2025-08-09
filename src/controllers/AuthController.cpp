@@ -10,7 +10,7 @@ AuthController::AuthController() : m_currentUser(nullptr)
     loadUsers();
 
     // Clean up any duplicate admin@badminton.com entries first
-    std::vector<std::shared_ptr<User>> adminDuplicates;
+    std::vector<User *> adminDuplicates;
     for (auto it = m_users.begin(); it != m_users.end();)
     {
         if ((*it) && (*it)->getEmail() == "admin@badminton.com")
@@ -39,11 +39,11 @@ AuthController::AuthController() : m_currentUser(nullptr)
     if (!hasAnyAdmin)
     {
         // Create new admin with correct role
-        auto defaultAdmin = std::make_shared<User>("admin@badminton.com",
-                                                   "admin123",
-                                                   "Administrator",
-                                                   "0123456789",
-                                                   UserRole::ADMIN);
+        auto defaultAdmin = new User("admin@badminton.com",
+                                     "admin123",
+                                     "Administrator",
+                                     "0123456789",
+                                     UserRole::ADMIN);
         defaultAdmin->setId(generateUserId());
         m_users.push_back(defaultAdmin);
         saveUsers();
@@ -58,6 +58,13 @@ AuthController::AuthController() : m_currentUser(nullptr)
 AuthController::~AuthController()
 {
     saveUsers();
+
+    // Clean up allocated memory
+    for (auto user : m_users)
+    {
+        delete user;
+    }
+    m_users.clear();
 }
 
 bool AuthController::login(const std::string &email, const std::string &password)
@@ -97,7 +104,7 @@ bool AuthController::registerUser(const std::string &email, const std::string &p
     }
 
     // Create new user
-    auto newUser = std::make_shared<User>(email, password, fullName, phoneNumber, role);
+    auto newUser = new User(email, password, fullName, phoneNumber, role);
     newUser->setId(generateUserId());
 
     m_users.push_back(newUser);
@@ -105,15 +112,15 @@ bool AuthController::registerUser(const std::string &email, const std::string &p
     return true;
 }
 
-std::vector<UserPtr> AuthController::getAllUsers() const
+std::vector<User *> AuthController::getAllUsers() const
 {
     return m_users;
 }
 
-UserPtr AuthController::getUserById(int userId) const
+User *AuthController::getUserById(int userId) const
 {
     auto it = std::find_if(m_users.begin(), m_users.end(),
-                           [userId](const UserPtr &user)
+                           [userId](const User *user)
                            {
                                return user->getId() == userId;
                            });
@@ -121,10 +128,10 @@ UserPtr AuthController::getUserById(int userId) const
     return (it != m_users.end()) ? *it : nullptr;
 }
 
-UserPtr AuthController::getUserByEmail(const std::string &email) const
+User *AuthController::getUserByEmail(const std::string &email) const
 {
     auto it = std::find_if(m_users.begin(), m_users.end(),
-                           [&email](const UserPtr &user)
+                           [&email](const User *user)
                            {
                                return user->getEmail() == email;
                            });
@@ -158,13 +165,15 @@ bool AuthController::updateUser(int userId, const User &updatedUser)
 bool AuthController::deleteUser(int userId)
 {
     auto it = std::find_if(m_users.begin(), m_users.end(),
-                           [userId](const UserPtr &user)
+                           [userId](const User *user)
                            {
                                return user->getId() == userId;
                            });
 
     if (it != m_users.end())
     {
+        // Clean up memory before removing
+        delete *it;
         // Actually remove the user from the list
         m_users.erase(it);
         saveUsers(); // Save changes immediately
@@ -258,7 +267,7 @@ void AuthController::loadUsers()
             {
                 try
                 {
-                    auto user = std::make_shared<User>();
+                    auto user = new User();
                     user->setId(std::stoi(tokens[0]));
                     user->setEmail(tokens[1]);
                     user->setPassword(tokens[2]);

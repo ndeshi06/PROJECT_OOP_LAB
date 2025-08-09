@@ -22,16 +22,16 @@ wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_CLOSE(MainFrame::OnClose)
 wxEND_EVENT_TABLE()
 
-    MainFrame::MainFrame(std::shared_ptr<AuthController> authController,
-                         std::shared_ptr<CourtController> courtController,
-                         std::shared_ptr<BookingController> bookingController)
-    : wxFrame(nullptr, wxID_ANY, "Badminton Court Management System",
-              wxDefaultPosition, wxSize(1200, 900)),
-      m_authController(authController),
-      m_courtController(courtController),
-      m_bookingController(bookingController),
-      m_selectedCourtId(-1),
-      m_selectedBookingId(-1)
+MainFrame::MainFrame(AuthController* authController,
+                        CourtController* courtController,
+                        BookingController* bookingController)
+: wxFrame(nullptr, wxID_ANY, "Badminton Court Management System",
+            wxDefaultPosition, wxSize(1200, 900)),
+    m_authController(authController),
+    m_courtController(courtController),
+    m_bookingController(bookingController),
+    m_selectedCourtId(-1),
+    m_selectedBookingId(-1)
 {
     Center();
 
