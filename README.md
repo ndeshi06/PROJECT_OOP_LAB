@@ -96,7 +96,7 @@ cd build
 3. **Configuration**: Set up courts, pricing, and user accounts
 
 ### Default Credentials
-- **Username**: `admin`
+- **Email**: `admin@badminton.com`
 - **Password**: `admin123`
 
 ### Main Features
