@@ -24,6 +24,13 @@ AuthController::AuthController() : m_currentUser(nullptr)
         }
     }
 
+    // Clean up the duplicate admin objects from memory
+    for (User* duplicate : adminDuplicates)
+    {
+        delete duplicate;
+    }
+    adminDuplicates.clear();
+
     // Check if we have any admin user at all after cleanup
     bool hasAnyAdmin = false;
     for (const auto &user : m_users)

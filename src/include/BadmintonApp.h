@@ -1,5 +1,6 @@
 #pragma once
 #include <wx/wx.h>
+#include <wx/intl.h>
 
 class AuthController;
 class CourtController;
@@ -15,8 +16,14 @@ private:
     BookingController *m_bookingController;
     EmailNotificationObserver *m_emailObserver;
     InAppNotificationObserver *m_inAppObserver;
+    wxLocale *m_locale;
 
 public:
+    // Constructor to initialize all pointers
+    BadmintonApp() : m_authController(nullptr), m_courtController(nullptr), 
+                     m_bookingController(nullptr), m_emailObserver(nullptr), 
+                     m_inAppObserver(nullptr), m_locale(nullptr) {}
+
     virtual bool OnInit();
     virtual int OnExit();
 

@@ -16,11 +16,7 @@ BookingManager::~BookingManager()
     }
     m_bookings.clear();
     
-    // Clean up all observers
-    for (NotificationObserver* observer : m_observers)
-    {
-        delete observer;
-    }
+    // Clear observers without deleting them (they're managed by their owners)
     m_observers.clear();
 }
 

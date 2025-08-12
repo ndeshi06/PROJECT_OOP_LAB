@@ -19,7 +19,7 @@ wxIMPLEMENT_APP(BadmintonApp);
 bool BadmintonApp::OnInit()
 {
     // Set locale for proper date format display (DD/MM/YYYY)
-    wxLocale *locale = new wxLocale(wxLANGUAGE_DEFAULT);
+    m_locale = new wxLocale(wxLANGUAGE_DEFAULT);
 
     SetExitOnFrameDelete(false);
 
@@ -53,6 +53,9 @@ int BadmintonApp::OnExit()
 
     // Save bookings through BookingManager
     BookingManager::getInstance().saveBookings();
+
+    // Clean up singleton before app exit
+    BookingManager::cleanup();
 
     return wxApp::OnExit();
 }
@@ -143,6 +146,13 @@ void BadmintonApp::OnLogout()
 
 BadmintonApp::~BadmintonApp()
 {
+    // Clean up locale first
+    if (m_locale)
+    {
+        delete m_locale;
+        m_locale = nullptr;
+    }
+
     // Clean up notification observers
     if (m_emailObserver)
     {
