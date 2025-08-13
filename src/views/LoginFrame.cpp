@@ -204,6 +204,14 @@ void LoginFrame::OnLogin(wxCommandEvent &event)
         selectedRole = UserRole::CUSTOMER;
     }
 
+    // Ensure auth controller is valid
+    if (!m_authController)
+    {
+        ShowMessage("System error: Authentication controller not available.", true);
+        wxMessageBox("System error! Please restart the application.", "Error", wxOK | wxICON_ERROR);
+        return;
+    }
+
     // Clear any previous user session first
     m_authController->logout();
 
@@ -233,6 +241,14 @@ void LoginFrame::OnLogin(wxCommandEvent &event)
 
             // Open main window
             OpenMainWindow();
+        }
+        else
+        {
+            // This shouldn't happen if login returned true, but handle it anyway
+            m_authController->logout();
+            ShowMessage("Login Failed", true);
+            wxMessageBox("System error during login! Please try again.", "Login Error", wxOK | wxICON_ERROR);
+            ClearForm();
         }
     }
     else
@@ -310,5 +326,9 @@ void LoginFrame::OpenMainWindow()
     if (app)
     {
         app->ShowMainFrame();
+    }
+    else
+    {
+        wxMessageBox("System error: Cannot access application instance!", "Error", wxOK | wxICON_ERROR);
     }
 }

@@ -112,8 +112,9 @@ void BadmintonApp::ShowLoginFrame()
     // Close the old window after new one is shown
     if (oldWindow && oldWindow != loginFrame)
     {
-        // Prevent the old window from vetoing the close
-        oldWindow->Close(true); // Force close without veto
+        // Just hide the old window first, then destroy it
+        oldWindow->Hide();
+        // oldWindow->Destroy();
     }
 }
 
@@ -130,8 +131,9 @@ void BadmintonApp::ShowMainFrame()
     // Close the old window after new one is shown
     if (oldWindow && oldWindow != mainFrame)
     {
-        // Prevent the old window from vetoing the close
-        oldWindow->Close(true); // Force close without veto
+        // Just hide the old window first, then destroy it
+        oldWindow->Hide();
+        // oldWindow->Destroy();
     }
 }
 

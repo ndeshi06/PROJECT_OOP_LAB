@@ -55,11 +55,6 @@ AuthController::AuthController() : m_currentUser(nullptr)
         m_users.push_back(defaultAdmin);
         saveUsers();
     }
-    else if (!adminDuplicates.empty())
-    {
-        m_users.push_back(adminDuplicates[0]); // Keep only the first one
-        saveUsers();
-    }
 }
 
 AuthController::~AuthController()
