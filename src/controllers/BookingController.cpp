@@ -3,7 +3,8 @@
 #include <iterator>
 #include <ctime>
 
-BookingController::BookingController() : m_bookingManager(BookingManager::getInstance()) {}
+BookingController::BookingController()
+    : m_bookingManager(BookingManager::getInstance()) {}
 
 BookingController::~BookingController() {}
 
@@ -131,11 +132,24 @@ bool BookingController::validateBookingDate(std::time_t bookingDate) const
     return bookingDate >= today;
 }
 
-double BookingController::calculateBookingCost(int courtId, std::time_t startTime, std::time_t endTime) const
+double BookingController::calculateBookingCost(int courtID, std::time_t startTime, std::time_t endTime) const
 {
     // This would typically get the court's hourly rate from CourtController
     // For now, using a fixed rate in VND
-    double hourlyRate = 50000.0; // Default rate in VND
+    double hourlyRate = 50000.0;
+
+    std::vector<Court*> courts = CourtController::getInstance().getAllCourts();
+
+    auto it = std::find_if(courts.begin(), courts.end(),
+                           [courtID](const Court *court)
+                           {
+                               return court->getId() == courtID;
+                           });
+
+    if (it != courts.end())
+    {
+        hourlyRate = (*it)->getHourlyRate();
+    }
 
     double hours = static_cast<double>(endTime - startTime) / 3600.0;
     return hours * hourlyRate;

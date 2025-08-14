@@ -418,7 +418,7 @@ void BookingPanel::RefreshAvailableSlots()
 
     // Get all bookings for this court on this date
     auto allBookings = m_bookingController->getAllBookings();
-    std::vector<std::pair<int, int>> bookedSlots;                           // start minutes, end minutes
+    std::vector<std::pair<int, int>> bookedSlots;  // start minutes, end minutes
     std::map<std::pair<int, int>, Booking*> slotBookingMap; // map slot to booking details
 
     for (const auto &booking : allBookings)

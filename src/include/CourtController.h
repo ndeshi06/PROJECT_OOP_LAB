@@ -1,12 +1,12 @@
 #pragma once
 #include "Court.h"
+#include "BookingController.h"
 #include <vector>
 
 class CourtController
 {
 private:
     std::vector<Court*> m_courts;
-
 public:
     CourtController();
     ~CourtController();
@@ -16,9 +16,14 @@ public:
                   double hourlyRate, CourtStatus status = CourtStatus::AVAILABLE);
     bool updateCourt(int courtId, const Court &updatedCourt);
     bool deleteCourt(int courtId);
-    Court* getCourt(int courtId) const;
+    Court* getCourt(int courtId);
     std::vector<Court*> getAllCourts() const;
     std::vector<Court*> getAvailableCourts() const;
+    static CourtController& getInstance()
+    {
+        static CourtController instance;
+        return instance;
+    }
 
     // Court management
     bool setCourtStatus(int courtId, CourtStatus status);
@@ -38,6 +43,8 @@ public:
     // Data persistence
     void loadCourts();
     void saveCourts();
+
+    friend class BookingController; // Allow BookingController to access private members
 
 private:
     // Helper methods

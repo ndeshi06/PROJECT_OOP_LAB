@@ -44,7 +44,7 @@ bool CourtController::addCourt(const std::string &name, const std::string &descr
 
 bool CourtController::updateCourt(int courtId, const Court &updatedCourt)
 {
-    auto court = getCourt(courtId);
+    auto court = this->getCourt(courtId);
     if (!court)
         return false;
 
@@ -87,7 +87,7 @@ bool CourtController::deleteCourt(int courtId)
     return false;
 }
 
-Court *CourtController::getCourt(int courtId) const
+Court *CourtController::getCourt(int courtId)
 {
     auto it = std::find_if(m_courts.begin(), m_courts.end(),
                            [courtId](const Court *court)
