@@ -233,7 +233,72 @@ void BookingPanel::RefreshCourtList()
 void BookingPanel::RefreshData()
 {
     RefreshMyBookings();
+    RefreshCourtChoice();
     RefreshAvailableSlots();
+    UpdateEstimatedCost();
+}
+
+void BookingPanel::RefreshCourtChoice()
+{
+    // Remember current selection
+    int previousSelection = m_courtChoice->GetSelection();
+    wxString previousCourtId;
+    if (previousSelection != wxNOT_FOUND)
+    {
+        wxStringClientData *clientData = dynamic_cast<wxStringClientData *>(m_courtChoice->GetClientObject(previousSelection));
+        if (clientData)
+        {
+            previousCourtId = clientData->GetData();
+        }
+    }
+
+    // Clear and reload courts
+    m_courtChoice->Clear();
+
+    if (!m_courtController)
+    {
+        return;
+    }
+
+    try
+    {
+        auto courts = m_courtController->getAllCourts();
+        int newSelectionIndex = 0;
+        int currentIndex = 0;
+        
+        for (const auto &court : courts)
+        {
+            if (court)
+            {
+                wxString courtName = wxString::Format("%s (%.0f VND/h)", court->getName(), court->getHourlyRate());
+                wxString courtId = wxString::Format("%d", court->getId());
+                m_courtChoice->Append(courtName, new wxStringClientData(courtId));
+                
+                // Try to restore previous selection
+                if (courtId == previousCourtId)
+                {
+                    newSelectionIndex = currentIndex;
+                }
+                currentIndex++;
+            }
+        }
+
+        if (m_courtChoice->GetCount() > 0)
+        {
+            m_courtChoice->SetSelection(newSelectionIndex);
+        }
+    }
+    catch (const std::exception &e)
+    {
+        // Fallback to default courts if loading fails
+        m_courtChoice->Append("Court 1 (50000 VND/h)", new wxStringClientData("1"));
+        m_courtChoice->Append("Court 2 (75000 VND/h)", new wxStringClientData("2"));
+        m_courtChoice->Append("Court 3 (100000 VND/h)", new wxStringClientData("3"));
+        if (m_courtChoice->GetCount() > 0)
+        {
+            m_courtChoice->SetSelection(0);
+        }
+    }
 }
 
 void BookingPanel::RefreshMyBookings()
@@ -788,13 +853,122 @@ void BookingPanel::OnModifyBooking(wxCommandEvent &event)
         return;
     }
 
-    wxMessageBox("Modify booking functionality will be implemented in the next update.\n\n"
-                 "Currently you can:\n"
-                 "- Cancel existing bookings\n"
-                 "- Create new bookings\n"
-                 "- View all your bookings",
-                 "Feature Coming Soon",
-                 wxOK | wxICON_INFORMATION, this);
+    // Get the selected booking
+    auto booking = m_bookingController->getBooking(m_selectedBookingId);
+    if (!booking)
+    {
+        wxMessageBox("Booking not found!", "Error", wxOK | wxICON_ERROR, this);
+        return;
+    }
+
+    // Check if booking can be modified (only pending/confirmed bookings)
+    if (booking->getStatus() != BookingStatus::PENDING && 
+        booking->getStatus() != BookingStatus::CONFIRMED)
+    {
+        wxMessageBox("This booking cannot be modified!\n\n"
+                     "Only pending and confirmed bookings can be modified.",
+                     "Cannot Modify Booking",
+                     wxOK | wxICON_WARNING, this);
+        return;
+    }
+
+    // Create modify booking dialog
+    wxDialog modifyDialog(this, wxID_ANY, "Modify Booking", 
+                         wxDefaultPosition, wxSize(400, 350));
+    
+    // Get current booking details
+    std::time_t startTime = booking->getStartTime();
+    std::time_t endTime = booking->getEndTime();
+    struct tm *startTm = std::localtime(&startTime);
+    struct tm *endTm = std::localtime(&endTime);
+    
+    wxBoxSizer *mainSizer = new wxBoxSizer(wxVERTICAL);
+    
+    // Date picker
+    wxStaticText *dateLabel = new wxStaticText(&modifyDialog, wxID_ANY, "Booking Date:");
+    wxDatePickerCtrl *datePicker = new wxDatePickerCtrl(&modifyDialog, wxID_ANY,
+        wxDateTime(startTm->tm_mday, (wxDateTime::Month)startTm->tm_mon, startTm->tm_year + 1900));
+    
+    // Start time
+    wxStaticText *startLabel = new wxStaticText(&modifyDialog, wxID_ANY, "Start Time:");
+    wxTimePickerCtrl *startTimePicker = new wxTimePickerCtrl(&modifyDialog, wxID_ANY,
+        wxDateTime(1, wxDateTime::Jan, 1900, startTm->tm_hour, startTm->tm_min));
+    
+    // End time
+    wxStaticText *endLabel = new wxStaticText(&modifyDialog, wxID_ANY, "End Time:");
+    wxTimePickerCtrl *endTimePicker = new wxTimePickerCtrl(&modifyDialog, wxID_ANY,
+        wxDateTime(1, wxDateTime::Jan, 1900, endTm->tm_hour, endTm->tm_min));
+    
+    // Notes
+    wxStaticText *notesLabel = new wxStaticText(&modifyDialog, wxID_ANY, "Notes:");
+    wxTextCtrl *notesCtrl = new wxTextCtrl(&modifyDialog, wxID_ANY, booking->getNotes(),
+                                          wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE);
+    
+    // Buttons
+    wxBoxSizer *buttonSizer = new wxBoxSizer(wxHORIZONTAL);
+    wxButton *okBtn = new wxButton(&modifyDialog, wxID_OK, "Modify");
+    wxButton *cancelBtn = new wxButton(&modifyDialog, wxID_CANCEL, "Cancel");
+    buttonSizer->Add(okBtn, 0, wxRIGHT, 5);
+    buttonSizer->Add(cancelBtn, 0);
+    
+    // Layout
+    mainSizer->Add(dateLabel, 0, wxALL, 5);
+    mainSizer->Add(datePicker, 0, wxALL | wxEXPAND, 5);
+    mainSizer->Add(startLabel, 0, wxALL, 5);
+    mainSizer->Add(startTimePicker, 0, wxALL | wxEXPAND, 5);
+    mainSizer->Add(endLabel, 0, wxALL, 5);
+    mainSizer->Add(endTimePicker, 0, wxALL | wxEXPAND, 5);
+    mainSizer->Add(notesLabel, 0, wxALL, 5);
+    mainSizer->Add(notesCtrl, 1, wxALL | wxEXPAND, 5);
+    mainSizer->Add(buttonSizer, 0, wxALL | wxALIGN_CENTER, 10);
+    
+    modifyDialog.SetSizer(mainSizer);
+    
+    if (modifyDialog.ShowModal() == wxID_OK)
+    {
+        // Get new values
+        wxDateTime newDate = datePicker->GetValue();
+        wxDateTime newStartTime = startTimePicker->GetValue();
+        wxDateTime newEndTime = endTimePicker->GetValue();
+        
+        // Combine date and time
+        struct tm newStartTm = {};
+        newStartTm.tm_year = newDate.GetYear() - 1900;
+        newStartTm.tm_mon = newDate.GetMonth();
+        newStartTm.tm_mday = newDate.GetDay();
+        newStartTm.tm_hour = newStartTime.GetHour();
+        newStartTm.tm_min = newStartTime.GetMinute();
+        
+        struct tm newEndTm = {};
+        newEndTm.tm_year = newDate.GetYear() - 1900;
+        newEndTm.tm_mon = newDate.GetMonth();
+        newEndTm.tm_mday = newDate.GetDay();
+        newEndTm.tm_hour = newEndTime.GetHour();
+        newEndTm.tm_min = newEndTime.GetMinute();
+        
+        std::time_t newStartTimeT = std::mktime(&newStartTm);
+        std::time_t newEndTimeT = std::mktime(&newEndTm);
+        
+        // Modify the booking
+        if (m_bookingController->modifyBooking(m_selectedBookingId, 
+                                              newStartTimeT, newEndTimeT, 
+                                              notesCtrl->GetValue().ToStdString()))
+        {
+            wxMessageBox("Booking modified successfully!", "Success", 
+                        wxOK | wxICON_INFORMATION, this);
+            RefreshData();
+        }
+        else
+        {
+            wxMessageBox("Failed to modify booking!\n\n"
+                        "Please check:\n"
+                        "- Time slot is available\n"
+                        "- Booking time is valid\n"
+                        "- Start time is before end time",
+                        "Modification Failed", 
+                        wxOK | wxICON_ERROR, this);
+        }
+    }
 }
 
 void BookingPanel::OnCourtChanged(wxCommandEvent &event)

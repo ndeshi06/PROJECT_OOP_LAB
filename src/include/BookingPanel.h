@@ -70,6 +70,7 @@ public:
     void RefreshCourts();
     void RefreshData();
     void RefreshCourtList();
+    void RefreshCourtChoice();
     void RefreshMyBookings();
     void RefreshAvailableSlots();
     void UpdateUI();

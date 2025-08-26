@@ -1,4 +1,5 @@
 #include "CourtManagementPanel.h"
+#include "MainFrame.h"
 #include "../include/CourtController.h"
 #include "../include/AuthController.h"
 #include "../include/Court.h"
@@ -263,6 +264,13 @@ void CourtManagementPanel::OnSave(wxCommandEvent &event)
             if (m_courtController && m_courtController->updateCourt(m_selectedCourtId, updatedCourt))
             {
                 wxMessageBox("Court information updated successfully!", "Success", wxOK | wxICON_INFORMATION);
+                
+                // Refresh all panels to update prices in booking panel
+                MainFrame* mainFrame = dynamic_cast<MainFrame*>(wxGetTopLevelParent(this));
+                if (mainFrame)
+                {
+                    mainFrame->RefreshAllPanels();
+                }
             }
             else
             {
@@ -276,6 +284,13 @@ void CourtManagementPanel::OnSave(wxCommandEvent &event)
             if (m_courtController && m_courtController->addCourt(name.ToStdString(), description.ToStdString(), rate, status))
             {
                 wxMessageBox("New court added successfully!", "Success", wxOK | wxICON_INFORMATION);
+                
+                // Refresh all panels to update court list in booking panel
+                MainFrame* mainFrame = dynamic_cast<MainFrame*>(wxGetTopLevelParent(this));
+                if (mainFrame)
+                {
+                    mainFrame->RefreshAllPanels();
+                }
             }
             else
             {
