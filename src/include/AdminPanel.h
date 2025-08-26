@@ -33,6 +33,7 @@ private:
     void OnFilterByDate(wxDateEvent &event);
     void OnFilterByCourt(wxCommandEvent &event);
     void OnFilterByUser(wxCommandEvent &event);
+    void OnFilterByStatus(wxCommandEvent &event);
     void OnExportData(wxCommandEvent &event);
     void OnBookingSelected(wxListEvent &event);
     void OnCancelBooking(wxCommandEvent &event);

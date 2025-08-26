@@ -10,6 +10,7 @@
 #include <wx/filedlg.h>
 #include <wx/datectrl.h>
 #include <wx/dateevt.h>
+#include <wx/datetime.h>
 #include <fstream>
 
 wxBEGIN_EVENT_TABLE(AdminPanel, wxPanel)
@@ -19,7 +20,7 @@ wxBEGIN_EVENT_TABLE(AdminPanel, wxPanel)
     EVT_LIST_ITEM_SELECTED(ID_BOOKING_HISTORY_LIST, AdminPanel::OnBookingSelected)
     EVT_CHOICE(ID_COURT_FILTER, AdminPanel::OnFilterByCourt)
     EVT_CHOICE(ID_USER_FILTER, AdminPanel::OnFilterByUser)
-    EVT_CHOICE(ID_STATUS_FILTER, AdminPanel::OnFilterByCourt)
+    EVT_CHOICE(ID_STATUS_FILTER, AdminPanel::OnFilterByStatus)
     EVT_DATE_CHANGED(ID_START_DATE_PICKER, AdminPanel::OnFilterByDate)
     EVT_DATE_CHANGED(ID_END_DATE_PICKER, AdminPanel::OnFilterByDate)
 wxEND_EVENT_TABLE()
@@ -153,6 +154,11 @@ void AdminPanel::CreateStatisticsView()
 
 void AdminPanel::RefreshData()
 {
+    // Save current filter selections
+    int savedCourtSelection = m_courtFilter->GetSelection();
+    int savedUserSelection = m_userFilter->GetSelection();
+    int savedStatusSelection = m_statusFilter->GetSelection();
+    
     // Populate court filter
     m_courtFilter->Clear();
     m_courtFilter->Append("All Courts");
@@ -175,7 +181,12 @@ void AdminPanel::RefreshData()
             // Handle error silently
         }
     }
-    m_courtFilter->SetSelection(0);
+    
+    // Restore court filter selection if possible
+    if (savedCourtSelection >= 0 && savedCourtSelection < m_courtFilter->GetCount())
+        m_courtFilter->SetSelection(savedCourtSelection);
+    else
+        m_courtFilter->SetSelection(0);
 
     // Populate user filter
     m_userFilter->Clear();
@@ -201,10 +212,21 @@ void AdminPanel::RefreshData()
             // Handle error silently
         }
     }
-    m_userFilter->SetSelection(0);
+    
+    // Restore user filter selection if possible
+    if (savedUserSelection >= 0 && savedUserSelection < m_userFilter->GetCount())
+        m_userFilter->SetSelection(savedUserSelection);
+    else
+        m_userFilter->SetSelection(0);
+    
+    // Restore status filter selection if possible
+    if (savedStatusSelection >= 0 && savedStatusSelection < m_statusFilter->GetCount())
+        m_statusFilter->SetSelection(savedStatusSelection);
+    else
+        m_statusFilter->SetSelection(0);
 
-    RefreshBookingHistory();
-    RefreshStatistics();
+    // Use ApplyFilters instead of RefreshBookingHistory to respect current filter settings
+    ApplyFilters();
 }
 
 void AdminPanel::RefreshBookingHistory()
@@ -403,6 +425,28 @@ void AdminPanel::OnRefreshData(wxCommandEvent &event)
 
 void AdminPanel::OnFilterByDate(wxDateEvent &event)
 {
+    // Get current date values
+    wxDateTime startDate = m_startDatePicker->GetValue();
+    wxDateTime endDate = m_endDatePicker->GetValue();
+    
+    // Check if start date is after end date
+    if (startDate > endDate)
+    {
+        // Determine which picker was changed and adjust the other
+        if (event.GetEventObject() == m_startDatePicker)
+        {
+            // Start date was changed and is now after end date
+            // Set end date to start date
+            m_endDatePicker->SetValue(startDate);
+        }
+        else if (event.GetEventObject() == m_endDatePicker)
+        {
+            // End date was changed and is now before start date  
+            // Set start date to end date
+            m_startDatePicker->SetValue(endDate);
+        }
+    }
+    
     ApplyFilters();
 }
 
@@ -412,6 +456,11 @@ void AdminPanel::OnFilterByCourt(wxCommandEvent &event)
 }
 
 void AdminPanel::OnFilterByUser(wxCommandEvent &event)
+{
+    ApplyFilters();
+}
+
+void AdminPanel::OnFilterByStatus(wxCommandEvent &event)
 {
     ApplyFilters();
 }
@@ -505,7 +554,154 @@ void AdminPanel::OnCancelBooking(wxCommandEvent &event)
 
 void AdminPanel::ApplyFilters()
 {
-    // This method would apply the selected filters to the booking list
-    // For now, we'll just refresh the data
-    RefreshBookingHistory();
+    if (!m_bookingController)
+        return;
+
+    m_bookingHistoryList->DeleteAllItems();
+
+    // Get filter values
+    wxDateTime startDate = m_startDatePicker->GetValue();
+    wxDateTime endDate = m_endDatePicker->GetValue();
+    
+    // Validate date range - start date should not be after end date
+    if (startDate > endDate)
+    {
+        wxMessageBox("Start date cannot be after end date!\n\n"
+                     "Please select a valid date range.",
+                     "Invalid Date Range", 
+                     wxOK | wxICON_WARNING, this);
+        
+        // Auto-correct: swap the dates
+        m_startDatePicker->SetValue(endDate);
+        m_endDatePicker->SetValue(startDate);
+        
+        // Update local variables
+        wxDateTime temp = startDate;
+        startDate = endDate;
+        endDate = temp;
+    }
+    
+    int courtSelection = m_courtFilter->GetSelection();
+    int userSelection = m_userFilter->GetSelection();
+    int statusSelection = m_statusFilter->GetSelection();
+
+    // Get all bookings
+    auto allBookings = m_bookingController->getAllBookings();
+
+    int index = 0;
+    int totalBookings = allBookings.size();
+    int filteredCount = 0;
+    
+    for (const auto &booking : allBookings)
+    {
+        if (!booking) continue;
+
+        bool passesFilter = true;
+
+        // Apply date filter - make end date inclusive by adding 1 day
+        wxDateTime bookingDate(booking->getBookingDate());
+        wxDateTime endDateInclusive = endDate;
+        endDateInclusive.Add(wxTimeSpan::Day()); // Make end date inclusive
+        
+        if (bookingDate < startDate || bookingDate >= endDateInclusive)
+        {
+            passesFilter = false;
+        }
+
+        // Apply court filter
+        if (passesFilter && courtSelection > 0) // 0 = "All Courts"
+        {
+            wxStringClientData *courtData = dynamic_cast<wxStringClientData *>(m_courtFilter->GetClientObject(courtSelection));
+            if (courtData)
+            {
+                long courtId;
+                if (courtData->GetData().ToLong(&courtId))
+                {
+                    if (booking->getCourtId() != (int)courtId)
+                        passesFilter = false;
+                }
+                else
+                {
+                    passesFilter = false;
+                }
+            }
+            else
+            {
+                passesFilter = false;
+            }
+        }
+
+        // Apply user filter
+        if (passesFilter && userSelection > 0) // 0 = "All Users"
+        {
+            wxStringClientData *userData = dynamic_cast<wxStringClientData *>(m_userFilter->GetClientObject(userSelection));
+            if (userData)
+            {
+                long userId;
+                if (userData->GetData().ToLong(&userId))
+                {
+                    if (booking->getUserId() != (int)userId)
+                        passesFilter = false;
+                }
+                else
+                {
+                    passesFilter = false;
+                }
+            }
+            else
+            {
+                passesFilter = false;
+            }
+        }
+
+        // Apply status filter
+        if (passesFilter && statusSelection > 0) // 0 = "All Status"
+        {
+            wxString selectedStatus = m_statusFilter->GetStringSelection();
+            wxString bookingStatus = booking->getStatusString();
+            if (selectedStatus != bookingStatus)
+                passesFilter = false;
+        }
+
+        // Add booking to list if it passes all filters
+        if (passesFilter)
+        {
+            filteredCount++;
+            long itemIndex = m_bookingHistoryList->InsertItem(index, wxString::Format("%d", booking->getId()));
+        
+            // Get user name
+            wxString userName = GetUserNameById(booking->getUserId());
+            
+            // Get court name
+            wxString courtName = "Unknown";
+            if (m_courtController)
+            {
+                auto courts = m_courtController->getAllCourts();
+                for (const auto &court : courts)
+                {
+                    if (court && court->getId() == booking->getCourtId())
+                    {
+                        courtName = court->getName();
+                        break;
+                    }
+                }
+            }
+
+            m_bookingHistoryList->SetItem(itemIndex, 1, userName);
+            m_bookingHistoryList->SetItem(itemIndex, 2, courtName);
+            m_bookingHistoryList->SetItem(itemIndex, 3, wxDateTime(booking->getBookingDate()).Format("%d/%m/%Y"));
+            m_bookingHistoryList->SetItem(itemIndex, 4, wxDateTime(booking->getStartTime()).Format("%H:%M"));
+            m_bookingHistoryList->SetItem(itemIndex, 5, wxDateTime(booking->getEndTime()).Format("%H:%M"));
+            m_bookingHistoryList->SetItem(itemIndex, 6, FormatCurrency(booking->getTotalAmount()));
+            m_bookingHistoryList->SetItem(itemIndex, 7, booking->getStatusString());
+
+            // Store booking ID in item data
+            m_bookingHistoryList->SetItemData(itemIndex, booking->getId());
+
+            index++;
+        }
+    }
+
+    // Update statistics based on filtered results
+    RefreshStatistics();
 }
