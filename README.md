@@ -51,42 +51,84 @@ A comprehensive desktop application for managing badminton court facilities, bui
 - pcre2 (for regex support)
 - Standard C++ libraries
 
+
 ## 🚀 Installation & Setup
 
-### 1. Clone the Repository
+### 1. Clone the Repository (All Platforms)
 ```bash
 git clone https://github.com/ndeshi06/PROJECT_OOP_LAB.git
 cd PROJECT_OOP_LAB
 ```
 
-### 2. Install System Dependencies
-```bash
-# Install Homebrew if not already installed
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+---
 
-# Install pcre2 for arm64
-brew install pcre2
-```
+### 🪟 Windows
+1. **Install Dependencies:**
+   - Download and install [wxWidgets 3.2.8](https://www.wxwidgets.org/downloads/).
+   - Ensure you have a C++ compiler (MinGW recommended).
+2. **Build the Application:**
+   - Double-click `build_gui.bat` or run in Command Prompt:
+  ```cmd
+  build_gui.bat
+  ```
+3. **Run the Application:**
+   - Navigate to the `build` folder and double-click `BadmintonCourtManagerGUI.exe`.
 
-### 3. Configure wxWidgets
-```bash
-cd wxWidgets-3.2.8
-./configure --enable-unicode --disable-shared --enable-static --with-osx_cocoa
-make -j4
-cd ..
-```
+---
 
-### 4. Build the Application
-```bash
-chmod +x build_gui.sh
-./build_gui.sh
-```
+### 🐧 Linux
+1. **Install Dependencies:**
+   - Install build tools and wxWidgets:
+  ```bash
+  sudo apt update
+  sudo apt install build-essential libwxgtk3.2-dev libpcre2-dev
+  ```
+2. **Build wxWidgets (not required, already built by the author):**
+  > ⚠️ **Note:** You can skip this step because wxWidgets is already pre-built in the project folder. **Only perform this if you encounter errors related to the wxWidgets library or if you want to rebuild wxWidgets yourself.**
+  ```bash
+  cd wxWidgets-3.2.8
+  ./configure --enable-unicode --disable-shared --enable-static
+  make -j4
+  cd ..
+  ```
+3. **Build the Application:**
+  ```bash
+  chmod +x build_gui_linux.sh
+  ./build_gui_linux.sh
+  ```
+4. **Run the Application:**
+  ```bash
+  cd build
+  ./BadmintonCourtManagerGUI
+  ```
 
-### 5. Run the Application
-```bash
-cd build
-./BadmintonCourtManagerGUI
-```
+---
+
+### 🍏 macOS
+1. **Install Dependencies:**
+   - Install [Homebrew](https://brew.sh/) if not already installed:
+  ```bash
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  brew install pcre2
+  ```
+2. **Build wxWidgets (not required, already built by the author):**
+  > ⚠️ **Note:** You can skip this step because wxWidgets is already pre-built in the project folder. **Only perform this if you encounter errors related to the wxWidgets library or if you want to rebuild wxWidgets yourself.**
+  ```bash
+  cd wxWidgets-3.2.8
+  ./configure --enable-unicode --disable-shared --enable-static --with-osx_cocoa
+  make -j4
+  cd ..
+  ```
+3. **Build the Application:**
+  ```bash
+  chmod +x build_gui_mac.sh
+  ./build_gui_mac.sh
+  ```
+4. **Run the Application:**
+  ```bash
+  cd build
+  ./BadmintonCourtManagerGUI
+  ```
 
 ## 📖 Usage Guide
 
