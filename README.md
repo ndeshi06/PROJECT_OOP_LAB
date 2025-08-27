@@ -65,7 +65,7 @@ cd PROJECT_OOP_LAB
 
 ### 🪟 Windows
 1. **Install Dependencies:**
-   - Download and install [wxWidgets 3.2.8](https://www.wxwidgets.org/downloads/).
+  - Download and install [wxWidgets 3.2.8](https://www.wxwidgets.org/downloads/) (not required, already included in the project folder).
    - Ensure you have a C++ compiler (MinGW recommended).
 2. **Build the Application:**
    - Double-click `build_gui.bat` or run in Command Prompt:
@@ -79,10 +79,10 @@ cd PROJECT_OOP_LAB
 
 ### 🐧 Linux
 1. **Install Dependencies:**
-   - Install build tools and wxWidgets:
+  - Install build tools:
   ```bash
   sudo apt update
-  sudo apt install build-essential libwxgtk3.2-dev libpcre2-dev
+  sudo apt install build-essential libpcre2-dev
   ```
 2. **Build wxWidgets (not required, already built by the author):**
   > ⚠️ **Note:** You can skip this step because wxWidgets is already pre-built in the project folder. **Only perform this if you encounter errors related to the wxWidgets library or if you want to rebuild wxWidgets yourself.**
