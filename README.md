@@ -43,9 +43,9 @@ A comprehensive desktop application for managing badminton court facilities, bui
 ### System Requirements
 - Windows 10 or later / Ubuntu 20.04+ or other modern Linux / macOS 11.0 or later
 - Intel or Apple Silicon (arm64) processor
-- (macOS) Xcode Command Line Tools, Homebrew (for dependencies)
-- (Linux) build-essential, libwxgtk3.2-dev, libpcre2-dev
-- (Windows) MinGW or MSVC, wxWidgets 3.2.8
+- (macOS) Xcode Command Line Tools, Homebrew (for dependencies), wxWidgets
+- (Linux) build-essential, libwxgtk3.2-dev (wxWidgets), libpcre2-dev
+- (Windows) MinGW or MSVC, wxWidgets
 
 ### Dependencies
 - wxWidgets 3.2.8 (included in project)
