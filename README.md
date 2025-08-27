@@ -12,7 +12,7 @@ A comprehensive desktop application for managing badminton court facilities, bui
 - **Data Persistence**: File-based storage for users, courts, and bookings
 
 ### User Interface
-- Modern, dark-themed GUI optimized for macOS
+- Modern, dark-themed GUI for Windows, Linux, and macOS
 - Intuitive navigation with tabbed interface
 - Real-time data updates and validation
 - Responsive design with proper error handling
@@ -35,16 +35,17 @@ A comprehensive desktop application for managing badminton court facilities, bui
 ### Technologies
 - **Language**: C++17
 - **GUI Framework**: wxWidgets 3.2.8
-- **Platform**: macOS (Apple Silicon optimized)
+- **Platform**: Windows, Linux, macOS (cross-platform, Apple Silicon & Intel supported)
 - **Build System**: Custom shell script with g++
 
 ## 📋 Prerequisites
 
 ### System Requirements
-- macOS 11.0 or later
-- Apple Silicon (arm64) or Intel processor
-- Xcode Command Line Tools
-- Homebrew (for dependencies)
+- Windows 10 or later / Ubuntu 20.04+ or other modern Linux / macOS 11.0 or later
+- Intel or Apple Silicon (arm64) processor
+- (macOS) Xcode Command Line Tools, Homebrew (for dependencies)
+- (Linux) build-essential, libwxgtk3.2-dev, libpcre2-dev
+- (Windows) MinGW or MSVC, wxWidgets 3.2.8
 
 ### Dependencies
 - wxWidgets 3.2.8 (included in project)
@@ -193,61 +194,13 @@ PROJECT_OOP_LAB/
 │   ├── patterns/            # Design pattern implementations
 │   ├── utils/               # Utility classes and helpers
 │   └── include/             # Header files
-├── build/                   # Build output directory
-├── data/                    # Application data files
+├── dll/                     # DLL files (for Windows)
 ├── wxWidgets-3.2.8/         # wxWidgets framework
-├── build_gui.sh            # Build script
-└── README.md               # This file
+├── build_gui.sh             # Build script (cross-platform)
+├── build_gui_linux.sh       # Build script for Linux
+├── build_gui_mac.sh         # Build script for macOS
+└── README.md                # This file
 ```
-
-## 🔧 Development
-
-### Building from Source
-```bash
-# Clean build
-rm -rf build/*
-./build_gui.sh
-
-# Debug build (add debug flags to build_gui.sh)
-g++ -g -DDEBUG [other flags...]
-```
-
-### Code Style
-- Follow C++17 standards
-- Use meaningful variable and function names
-- Implement proper error handling
-- Document complex algorithms and business logic
-
-### Adding New Features
-1. Create appropriate model classes in `src/models/`
-2. Implement controllers in `src/controllers/`
-3. Design GUI components in `src/views/`
-4. Update build script if new files are added
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-#### Build Errors
-- **wxWidgets not found**: Ensure wxWidgets is properly configured and built
-- **Architecture mismatch**: Verify all dependencies are built for your system architecture
-- **Missing headers**: Check include paths in build script
-
-#### Runtime Issues
-- **Data files not found**: Ensure `data/` directory exists and is writable
-- **GUI not displaying**: Check wxWidgets installation and compatibility
-- **Export functionality**: Verify file permissions and available disk space
-
-### Debug Mode
-Enable debug output by adding `-DDEBUG` flag to build script:
-```bash
-# In build_gui.sh, add to CXXFLAGS
-CXXFLAGS="$CXXFLAGS -DDEBUG"
-```
-
-## 📄 License
-
-This project is developed for educational purposes as part of an Object-Oriented Programming course.
 
 ## 👥 Authors
   This application is developed by Group 8 - 24C06.
@@ -257,15 +210,3 @@ This project is developed for educational purposes as part of an Object-Oriented
 - **Trinh Tan Phat** - *Bug fixes, documentation* - [GitHub Profile](https://github.com/ttphat-fitus)
 - **Do Duc Thinh** - *Initial development, GUI design, feature development* - [GitHub Profile](https://github.com/ndeshi06)
 - **Chau Vu Trung** - *GUI design, feature development* - [GitHub Profile](https://github.com/CVTrung)
-
-## 🙏 Acknowledgments
-- wxWidgets development team for the excellent GUI framework
-- C++ community for best practices and design patterns
-- Educational institution for project requirements and guidance
-
-## 📞 Support
-
-For issues, questions, or contributions:
-- Create an issue on GitHub
-- Check troubleshooting section above
-- Review code documentation in source files
