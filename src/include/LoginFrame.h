@@ -1,5 +1,8 @@
 #pragma once
 #include <wx/wx.h>
+#include <wx/statbmp.h>
+#include <wx/image.h>
+#include <wx/bitmap.h>
 
 class AuthController;
 class CourtController;
@@ -26,6 +29,13 @@ private:
     wxFlexGridSizer *m_formSizer;
     wxBoxSizer *m_buttonSizer;
 
+    //images
+    wxStaticBitmap *m_imgNormal;
+    wxStaticBitmap *m_imgFocus;
+    wxImage m_imgNormalOriginal;
+    wxImage m_imgFocusOriginal;
+    void OnPasswordFocus(wxFocusEvent &event);
+    void OnPasswordKillFocus(wxFocusEvent &event);
 public:
     LoginFrame(AuthController *authController,
                CourtController *courtController = nullptr,
@@ -37,7 +47,7 @@ public:
     void OnRegister(wxCommandEvent &event);
     void OnClose(wxCloseEvent &event);
     void OnExit(wxCommandEvent &event);
-
+    void OnResize(wxSizeEvent &event);
     // Public methods
     void ClearForm();
 

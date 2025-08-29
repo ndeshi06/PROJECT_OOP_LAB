@@ -22,7 +22,7 @@ LoginFrame::LoginFrame(AuthController* authController,
                         CourtController* courtController,
                         BookingController* bookingController)
 : wxFrame(nullptr, wxID_ANY, "Badminton Court Management - Login",
-            wxDefaultPosition, wxSize(400, 300)),
+            wxDefaultPosition, wxSize(600, 500)),
     m_authController(authController),
     m_courtController(courtController),
     m_bookingController(bookingController),
@@ -54,28 +54,48 @@ void LoginFrame::CreateUI()
     // Create main sizer
     m_mainSizer = new wxBoxSizer(wxVERTICAL);
 
+    // Thêm ảnh vào login frame
+    wxImage::AddHandler(new wxPNGHandler);
+
+    m_imgNormalOriginal.LoadFile("../images/normal.png", wxBITMAP_TYPE_PNG);
+    m_imgFocusOriginal.LoadFile("../images/focus.png", wxBITMAP_TYPE_PNG);
+
+    m_imgNormal = new wxStaticBitmap(m_mainPanel, wxID_ANY,
+        wxBitmap(m_imgNormalOriginal), wxDefaultPosition, wxDefaultSize);
+    m_imgFocus = new wxStaticBitmap(m_mainPanel, wxID_ANY,
+        wxBitmap(m_imgFocusOriginal), wxDefaultPosition, wxDefaultSize);
+
+    m_imgFocus->Hide();
+
+    // Thêm ảnh vào sizer, căn giữa
+    m_mainSizer->Add(m_imgNormal, 0, wxALIGN_CENTER | wxTOP | wxBOTTOM, 10);
+    m_mainSizer->Add(m_imgFocus, 0, wxALIGN_CENTER | wxTOP | wxBOTTOM, 10);
+
     // Create title
     wxStaticText *titleLabel = new wxStaticText(m_mainPanel, wxID_ANY,
-                                                "Badminton Court Management System", wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER);
+                                                "Badminton Court Management System",
+                                                wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER);
     wxFont titleFont = titleLabel->GetFont();
     titleFont.SetPointSize(16);
     titleFont.SetWeight(wxFONTWEIGHT_BOLD);
     titleLabel->SetFont(titleFont);
 
-    // Create form sizer
+    m_mainSizer->Add(titleLabel, 0, wxALL | wxALIGN_CENTER, 10);
+
+    // Create form sizer (3 hàng, 2 cột)
     m_formSizer = new wxFlexGridSizer(3, 2, 10, 10);
     m_formSizer->AddGrowableCol(1, 1);
 
     // Email field
     m_formSizer->Add(new wxStaticText(m_mainPanel, wxID_ANY, "Email:"),
                      0, wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT);
-    m_emailCtrl = new wxTextCtrl(m_mainPanel, wxID_ANY, "", wxDefaultPosition, wxSize(200, -1));
+    m_emailCtrl = new wxTextCtrl(m_mainPanel, wxID_ANY, "", wxDefaultPosition, wxSize(220, -1));
     m_formSizer->Add(m_emailCtrl, 1, wxEXPAND);
 
     // Password field
     m_formSizer->Add(new wxStaticText(m_mainPanel, wxID_ANY, "Password:"),
                      0, wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT);
-    m_passwordCtrl = new wxTextCtrl(m_mainPanel, wxID_ANY, "", wxDefaultPosition, wxSize(200, -1), wxTE_PASSWORD);
+    m_passwordCtrl = new wxTextCtrl(m_mainPanel, wxID_ANY, "", wxDefaultPosition, wxSize(220, -1), wxTE_PASSWORD);
     m_formSizer->Add(m_passwordCtrl, 1, wxEXPAND);
 
     // Role field
@@ -85,31 +105,26 @@ void LoginFrame::CreateUI()
     m_roleChoice->Append("ADMIN");
     m_roleChoice->Append("STAFF");
     m_roleChoice->Append("CUSTOMER");
-    m_roleChoice->SetSelection(2); // Default to CUSTOMER
+    m_roleChoice->SetSelection(2); // Default CUSTOMER
     m_formSizer->Add(m_roleChoice, 1, wxEXPAND);
+
+    m_mainSizer->Add(m_formSizer, 0, wxALL | wxEXPAND, 15);
 
     // Create button sizer
     m_buttonSizer = new wxBoxSizer(wxHORIZONTAL);
-
-    // Login button
     m_loginBtn = new wxButton(m_mainPanel, wxID_OK, "Login");
     m_loginBtn->SetDefault();
-
-    // Register button
     m_registerBtn = new wxButton(m_mainPanel, wxID_NEW, "Register");
 
-    m_buttonSizer->Add(m_loginBtn, 0, wxRIGHT, 5);
-    m_buttonSizer->Add(m_registerBtn, 0, wxLEFT, 5);
+    m_buttonSizer->Add(m_loginBtn, 0, wxRIGHT, 8);
+    m_buttonSizer->Add(m_registerBtn, 0, wxLEFT, 8);
+
+    m_mainSizer->Add(m_buttonSizer, 0, wxALIGN_CENTER | wxTOP, 10);
 
     // Status label
     m_statusLabel = new wxStaticText(m_mainPanel, wxID_ANY, "");
     m_statusLabel->SetForegroundColour(*wxRED);
-
-    // Add to main sizer
-    m_mainSizer->Add(titleLabel, 0, wxALL | wxALIGN_CENTER, 20);
-    m_mainSizer->Add(m_formSizer, 0, wxALL | wxEXPAND, 20);
-    m_mainSizer->Add(m_buttonSizer, 0, wxALL | wxALIGN_CENTER, 10);
-    m_mainSizer->Add(m_statusLabel, 0, wxALL | wxALIGN_CENTER, 5);
+    m_mainSizer->Add(m_statusLabel, 0, wxALIGN_CENTER | wxALL, 5);
 
     m_mainPanel->SetSizer(m_mainSizer);
 
@@ -133,6 +148,9 @@ void LoginFrame::BindEvents()
 {
     // Events are bound through event table
     Bind(wxEVT_CLOSE_WINDOW, &LoginFrame::OnClose, this);
+    Bind(wxEVT_SIZE, &LoginFrame::OnResize, this);
+    m_passwordCtrl->Bind(wxEVT_SET_FOCUS, &LoginFrame::OnPasswordFocus, this);
+    m_passwordCtrl->Bind(wxEVT_KILL_FOCUS, &LoginFrame::OnPasswordKillFocus, this);
 }
 
 bool LoginFrame::ValidateInput()
@@ -287,7 +305,8 @@ void LoginFrame::OnRegister(wxCommandEvent &event)
 
 void LoginFrame::OnClose(wxCloseEvent &event)
 {
-    event.Skip(); // Allow the close event to propagate
+    Destroy();
+    wxTheApp->ExitMainLoop();
 }
 
 void LoginFrame::OnExit(wxCommandEvent &event)
@@ -316,4 +335,43 @@ void LoginFrame::OpenMainWindow()
     {
         wxMessageBox("System error: Cannot access application instance!", "Error", wxOK | wxICON_ERROR);
     }
+}
+
+void LoginFrame::OnPasswordFocus(wxFocusEvent& event)
+{
+    m_imgNormal->Hide();
+    m_imgFocus->Show();
+    m_mainPanel->Layout();
+    event.Skip();
+}
+
+void LoginFrame::OnPasswordKillFocus(wxFocusEvent& event)
+{
+    m_imgFocus->Hide();
+    m_imgNormal->Show();
+    m_mainPanel->Layout();
+    event.Skip();
+}
+
+void LoginFrame::OnResize(wxSizeEvent& event)
+{
+    wxSize size = GetClientSize();
+
+    // Giới hạn chiều rộng ảnh = 20% chiều rộng cửa sổ
+    int targetWidth = std::min(1.0 * m_imgNormalOriginal.GetWidth(),
+                               size.GetWidth() * 0.2);
+    // Giữ tỉ lệ
+    int targetHeight = m_imgNormalOriginal.GetHeight() *
+                       targetWidth / m_imgNormalOriginal.GetWidth();
+
+    // Scale ảnh thường
+    wxImage scaledNormal = m_imgNormalOriginal.Scale(targetWidth, targetHeight, wxIMAGE_QUALITY_HIGH);
+    m_imgNormal->SetBitmap(wxBitmap(scaledNormal));
+
+    // Scale ảnh focus
+    wxImage scaledFocus = m_imgFocusOriginal.Scale(targetWidth, targetHeight, wxIMAGE_QUALITY_HIGH);
+    m_imgFocus->SetBitmap(wxBitmap(scaledFocus));
+
+    Layout(); // update sizer
+    event.Skip(); // tiếp tục xử lý sự kiện resize
 }
