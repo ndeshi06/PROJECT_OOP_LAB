@@ -1095,31 +1095,6 @@ bool BookingPanel::ValidateBookingInput()
     wxDateTime startTime = m_startTimePicker->GetValue();
     wxDateTime endTime = m_endTimePicker->GetValue();
 
-    // Check if times are within allowed hours (6AM to 10PM)
-    int startHour = startTime.GetHour();
-    int endHour = endTime.GetHour();
-    int endMinute = endTime.GetMinute();
-    
-    if (startHour < 6 || startHour >= 22)
-    {
-        wxMessageBox("Invalid start time!\n\n"
-                     "Bookings are only allowed from 6:00 AM to 10:00 PM.\n"
-                     "Please select a start time between 6:00 AM and 9:00 PM.",
-                     "Time Restriction",
-                     wxOK | wxICON_WARNING, this);
-        return false;
-    }
-    
-    if (endHour > 22 || (endHour == 22 && endMinute > 0))
-    {
-        wxMessageBox("Invalid end time!\n\n"
-                     "Bookings must end by 10:00 PM.\n"
-                     "Please select an earlier end time.",
-                     "Time Restriction",
-                     wxOK | wxICON_WARNING, this);
-        return false;
-    }
-
     // Compare just the time parts
     int startMinutes = startTime.GetHour() * 60 + startTime.GetMinute();
     int endMinutes = endTime.GetHour() * 60 + endTime.GetMinute();

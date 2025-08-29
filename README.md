@@ -13,10 +13,12 @@ A comprehensive desktop application for managing badminton court facilities, bui
 
 ### User Interface
 - Modern, dark-themed GUI for Windows, Linux, and macOS
-- **Console Mode**: Command-line interface for terminal-based operation
 - Intuitive navigation with tabbed interface
 - Real-time data updates and validation
 - Responsive design with proper error handling
+
+### Additional Features
+- **Console Mode**: Optional command-line interface for terminal-based operation
 
 ### Advanced Features
 - **Export Functionality**: CSV export for statistics and reports
@@ -132,58 +134,7 @@ cd PROJECT_OOP_LAB
   ./BadmintonCourtManagerGUI
   ```
 
----
-
-## 💻 Console Version
-
-For users who prefer command-line interfaces or need to run the application on systems without GUI support, a console version is available.
-
-### Building Console Version
-```cmd
-# Windows
-build_console_app.bat
-
-# Linux/macOS  
-chmod +x build_console_app.sh
-./build_console_app.sh
-```
-
-### Running Console Version
-```cmd
-# Windows
-cd build
-BadmintonCourtManagerConsole.exe
-
-# Linux/macOS
-cd build
-./BadmintonCourtManagerConsole
-```
-
-### Console Features
-- **Full Functionality**: All core features available through text interface
-- **Menu-Driven Navigation**: Easy-to-use menu system
-- **User Management**: Login, registration, and user administration
-- **Court Management**: Add, edit, delete courts (Admin only)
-- **Booking System**: Create, view, modify, and cancel bookings
-- **Statistics**: Revenue reports and booking analytics
-- **Time Restrictions**: Bookings limited to 6AM-10PM
-- **Data Export**: Statistics can be exported to files
-
-### Console Commands
-- Navigate using numbered menu options
-- Input validation for dates (dd/mm/yyyy format)
-- Phone number required during registration
-- Default user role: Customer
-- Admin features accessible to admin users only
-
----
-
 ## 📖 Usage Guide
-
-### Application Modes
-This system provides two interfaces:
-- **GUI Version**: `BadmintonCourtManagerGUI.exe` - Full featured graphical interface
-- **Console Version**: `BadmintonCourtManagerConsole.exe` - Command-line interface
 
 ### Initial Setup
 1. **First Launch**: The system creates default admin user and sample courts
@@ -194,7 +145,7 @@ This system provides two interfaces:
 - **Email**: `admin@badminton.com`
 - **Password**: `admin123`
 
-### GUI Features
+### Main Features
 
 #### Court Management
 - Navigate to "Court Management" tab
@@ -204,7 +155,7 @@ This system provides two interfaces:
 
 #### Booking Management
 - View "Booking History" for all reservations
-- Create new bookings with date/time selection (6AM-10PM only)
+- Create new bookings with date/time selection
 - Track booking status (Pending, Confirmed, Cancelled, Completed)
 - Manage booking conflicts and validation
 
@@ -220,24 +171,22 @@ This system provides two interfaces:
 - Export data to CSV format for external analysis
 - View revenue trends and court utilization metrics
 
-### Console Features
+## 💻 Alternative Console Interface
 
-#### Main Menu Navigation
-- **Admin Menu**: Court management, user management, all bookings, statistics
-- **Customer Menu**: View courts, make bookings, view my bookings, cancel bookings
+For users who prefer command-line interfaces or need to run the application in terminal environments, an optional console version is available.
 
-#### Booking Process (Console)
-- Select court from available courts list
-- Enter date in dd/mm/yyyy format
-- Choose time slot (6AM-10PM only)
-- Specify duration in hours
-- Add optional notes
-- Confirm booking with total price display
+### Building Console Version
+```cmd
+build_console.bat
+```
 
-#### User Management (Console)
-- **Registration**: Full name, email, password, phone number required
-- **Admin Functions**: View all users, delete users, change user roles
-- **Role Management**: Switch between Customer and Admin roles
+### Running Console Application
+```cmd
+cd build
+BadmintonCourtManagerConsole.exe
+```
+
+The console interface provides the same core functionality as the GUI version through menu-driven navigation.
 
 ## 📊 Data Export
 
@@ -259,8 +208,8 @@ The system supports comprehensive data export functionality:
 ```
 PROJECT_OOP_LAB/
 ├── src/
-│   ├── console_main.cpp     # Console application entry point
-│   ├── main.cpp             # GUI application entry point
+│   ├── main.cpp             # Main GUI application entry point
+│   ├── console_main.cpp     # Optional console interface
 │   ├── controllers/         # Business logic controllers
 │   ├── models/              # Data models and entities
 │   ├── views/               # GUI components and panels
@@ -270,8 +219,8 @@ PROJECT_OOP_LAB/
 ├── build/                   # Compiled executables and data files
 ├── dll/                     # DLL files (for Windows)
 ├── wxWidgets-3.2.8/         # wxWidgets framework
-├── build_gui.bat            # GUI build script for Windows
-├── build_console_app.bat    # Console build script for Windows
+├── build_gui.bat            # Main GUI build script for Windows
+├── build_console.bat        # Optional console build script
 ├── build_gui.sh             # GUI build script (cross-platform)
 ├── build_gui_linux.sh       # GUI build script for Linux
 ├── build_gui_mac.sh         # GUI build script for macOS
