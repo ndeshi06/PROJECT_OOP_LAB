@@ -3,6 +3,7 @@
 #include "../include/User.h"
 #include <wx/msgdlg.h>
 #include <wx/stattext.h>
+#include <wx/thread.h>
 
 wxBEGIN_EVENT_TABLE(UserManagementPanel, wxPanel)
     EVT_BUTTON(ID_REFRESH_USERS, UserManagementPanel::OnRefreshUsers)
@@ -13,17 +14,48 @@ wxBEGIN_EVENT_TABLE(UserManagementPanel, wxPanel)
 wxEND_EVENT_TABLE()
 
 UserManagementPanel::UserManagementPanel(wxWindow *parent,
-                                            AuthController* authController)
-: wxPanel(parent, wxID_ANY),
-    m_authController(authController),
-    m_selectedUserId(-1)
+                                         AuthController* authController)
+    : wxPanel(parent, wxID_ANY),
+      m_authController(authController),
+      m_selectedUserId(-1),
+      m_statusText(nullptr)
 {
     CreateUI();
     BindEvents();
-    RefreshUserList();
+
+    // Hoãn gọi để chắc chắn panel + controls đã ổn định
+    CallAfter(&UserManagementPanel::RefreshUserList);
 }
 
-UserManagementPanel::~UserManagementPanel() {}
+UserManagementPanel::~UserManagementPanel()
+{
+    // Hủy các binding sự kiện tương ứng với BindEvents()
+    Unbind(wxEVT_BUTTON, &UserManagementPanel::OnRefreshUsers, this, ID_REFRESH_USERS);
+    Unbind(wxEVT_BUTTON, &UserManagementPanel::OnDeleteUser, this, ID_DELETE_USER);
+    Unbind(wxEVT_BUTTON, &UserManagementPanel::OnChangeRole, this, ID_CHANGE_ROLE);
+    Unbind(wxEVT_BUTTON, &UserManagementPanel::OnToggleStatus, this, ID_TOGGLE_STATUS);
+    Unbind(wxEVT_LIST_ITEM_SELECTED, &UserManagementPanel::OnUserSelected, this, ID_USER_LIST);
+
+    //Nếu sau này bạn đăng ký observer với AuthController thì nhớ remove ở đây
+    // if (m_authController) {
+    //     m_authController->UnregisterListener(this);
+    // }
+
+    m_mainSizer = nullptr;
+    m_userListSizer = nullptr;
+    m_actionsSizer = nullptr;
+
+    m_userList = nullptr;
+    m_refreshBtn = nullptr;
+    m_deleteBtn = nullptr;
+    m_changeRoleBtn = nullptr;
+    m_toggleStatusBtn = nullptr;
+    m_roleChoice = nullptr;
+
+    m_statusText = nullptr;
+    m_authController = nullptr;
+}
+
 
 void UserManagementPanel::CreateUI()
 {
@@ -109,64 +141,85 @@ void UserManagementPanel::BindEvents()
 
 void UserManagementPanel::RefreshUserList()
 {
+    // Ensure UI pointers valid
+    if (!m_userList || !m_mainSizer)
+        return;
+
+    // If called from non-main thread, re-schedule on main thread
+    if (!wxThread::IsMain())
+    {
+        wxTheApp->CallAfter([this]() { RefreshUserList(); });
+        return;
+    }
+
+    m_userList->Freeze();
     m_userList->DeleteAllItems();
 
     if (!m_authController)
     {
+        m_userList->Thaw();
         return;
     }
 
     try
     {
+        // Prefer const ref to avoid copies if vector holds pointers/smart pointers
         auto users = m_authController->getAllUsers();
 
         for (size_t i = 0; i < users.size(); ++i)
         {
-            auto user = users[i];
+            const auto &user = users[i];
             if (!user)
                 continue;
 
             long index = m_userList->InsertItem(i, wxString::Format("%d", user->getId()));
+
             m_userList->SetItem(index, 1, user->getEmail());
             m_userList->SetItem(index, 2, user->getFullName());
             m_userList->SetItem(index, 3, user->getPhoneNumber());
             m_userList->SetItem(index, 4, user->getRoleString());
             m_userList->SetItem(index, 5, user->isActive() ? "Active" : "Inactive");
 
-            // Format creation date
             std::time_t createdTime = user->getCreatedAt();
             wxDateTime created(createdTime);
-            m_userList->SetItem(index, 6, created.Format("%Y-%m-%d %H:%M"));
+            if (created.IsValid())
+                m_userList->SetItem(index, 6, created.Format("%Y-%m-%d %H:%M"));
+            else
+                m_userList->SetItem(index, 6, "N/A");
 
-            // Store user ID in item data
-            m_userList->SetItemData(index, user->getId());
+            // Use wxUIntPtr for portable storage
+            m_userList->SetItemData(index, static_cast<wxUIntPtr>(user->getId()));
         }
 
-        // Show total count
-        wxString statusMsg = wxString::Format("Total Users: %zu", users.size());
+        wxString statusMsg;
         if (users.empty())
-        {
             statusMsg = "No users found. Users will appear here after registration.";
-        }
+        else
+            statusMsg = wxString::Format("Total Users: %zu", users.size());
 
-        // Add a status text at the bottom
-        static wxStaticText *statusText = nullptr;
-        if (!statusText)
+        // Use member status control, not static local
+        if (!m_statusText)
         {
-            statusText = new wxStaticText(this, wxID_ANY, statusMsg);
-            m_mainSizer->Add(statusText, 0, wxALL | wxALIGN_CENTER, 5);
+            m_statusText = new wxStaticText(this, wxID_ANY, statusMsg);
+            m_mainSizer->Add(m_statusText, 0, wxALL | wxALIGN_CENTER, 5);
         }
         else
         {
-            statusText->SetLabel(statusMsg);
+            m_statusText->SetLabel(statusMsg);
         }
+
+        // Re-layout to apply changes
+        m_mainSizer->Layout();
     }
     catch (const std::exception &e)
     {
         wxMessageBox(wxString::Format("Error loading users: %s", e.what()),
                      "Error", wxOK | wxICON_ERROR, this);
     }
+
+    m_userList->Thaw();
 }
+
 
 void UserManagementPanel::OnRefreshUsers(wxCommandEvent &event)
 {

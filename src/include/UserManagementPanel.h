@@ -25,6 +25,7 @@ class UserManagementPanel : public wxPanel
 public:
     UserManagementPanel(wxWindow *parent, AuthController* authController);
     ~UserManagementPanel();
+    wxStaticText *m_statusText;
 
 private:
     void CreateUI();

@@ -70,7 +70,7 @@ compile "$SRC_DIR/patterns/BookingManager.cpp" "$OBJ_DIR/BookingManager.o"
 compile "$SRC_DIR/patterns/NotificationObserver.cpp" "$OBJ_DIR/NotificationObserver.o"
 
 # Compile utils
-compile "$SRC_DIR/utils/Database.cpp" "$OBJ_DIR/Database.o"
+# compile "$SRC_DIR/utils/Database.cpp" "$OBJ_DIR/Database.o"
 compile "$SRC_DIR/utils/DateTimeUtils.cpp" "$OBJ_DIR/DateTimeUtils.o"
 
 # Compile views

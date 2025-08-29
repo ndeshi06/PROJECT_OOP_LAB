@@ -19,7 +19,9 @@ wxIMPLEMENT_APP(BadmintonApp);
 bool BadmintonApp::OnInit()
 {
     // Set locale for proper date format display (DD/MM/YYYY)
-    m_locale = new wxLocale(wxLANGUAGE_DEFAULT);
+    m_locale = new wxLocale();
+    if (!m_locale->Init(wxLANGUAGE_DEFAULT))
+        wxLogWarning("Locale init failed");
 
     SetExitOnFrameDelete(false);
 
@@ -106,15 +108,17 @@ void BadmintonApp::ShowLoginFrame()
 
     // Create and show login frame
     LoginFrame *loginFrame = new LoginFrame(m_authController, m_courtController, m_bookingController);
-    loginFrame->Show(true);
     SetTopWindow(loginFrame);
-
+    loginFrame->Show(true);
     // Close the old window after new one is shown
     if (oldWindow && oldWindow != loginFrame)
     {
         // Just hide the old window first, then destroy it
         oldWindow->Hide();
-        // oldWindow->Destroy();
+        if (oldWindow)
+        {
+            oldWindow->Destroy();
+        }
     }
 }
 
@@ -125,15 +129,17 @@ void BadmintonApp::ShowMainFrame()
 
     // Create and show main frame
     MainFrame *mainFrame = new MainFrame(m_authController, m_courtController, m_bookingController);
-    mainFrame->Show(true);
     SetTopWindow(mainFrame);
-
+    mainFrame->Show(true);
     // Close the old window after new one is shown
     if (oldWindow && oldWindow != mainFrame)
     {
         // Just hide the old window first, then destroy it
         oldWindow->Hide();
-        // oldWindow->Destroy();
+        if (oldWindow)
+        {
+            oldWindow->Destroy();
+        }
     }
 }
 
@@ -156,14 +162,17 @@ BadmintonApp::~BadmintonApp()
     }
 
     // Clean up notification observers
+    auto &bm = BookingManager::getInstance();
     if (m_emailObserver)
     {
+        bm.removeObserver(m_emailObserver);
         delete m_emailObserver;
         m_emailObserver = nullptr;
     }
 
     if (m_inAppObserver)
     {
+        bm.removeObserver(m_inAppObserver);
         delete m_inAppObserver;
         m_inAppObserver = nullptr;
     }

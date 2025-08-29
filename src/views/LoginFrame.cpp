@@ -287,22 +287,7 @@ void LoginFrame::OnRegister(wxCommandEvent &event)
 
 void LoginFrame::OnClose(wxCloseEvent &event)
 {
-    // Check if this is a forced close
-    if (!event.CanVeto())
-    {
-        Destroy();
-        return;
-    }
-
-    // Only exit app if no other main windows are available
-    if (wxTopLevelWindows.GetCount() <= 1)
-    {
-        wxExit();
-    }
-    else
-    {
-        Destroy();
-    }
+    event.Skip(); // Allow the close event to propagate
 }
 
 void LoginFrame::OnExit(wxCommandEvent &event)
