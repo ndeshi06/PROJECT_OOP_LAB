@@ -19,7 +19,6 @@ private:
     // UI components
     wxDatePickerCtrl *m_startDatePicker;
     wxDatePickerCtrl *m_endDatePicker;
-    wxButton *m_generateBtn;
     wxButton *m_exportBtn;
 
     // Display components
@@ -43,7 +42,6 @@ public:
     ~StatisticsPanel();
 
     // Event handlers
-    void OnGenerateStats(wxCommandEvent &event);
     void OnExportStats(wxCommandEvent &event);
 
     // Public methods

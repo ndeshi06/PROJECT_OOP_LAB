@@ -16,7 +16,6 @@
 
 // Event table
 wxBEGIN_EVENT_TABLE(StatisticsPanel, wxPanel)
-    EVT_BUTTON(ID_GENERATE_STATS, StatisticsPanel::OnGenerateStats)
     EVT_BUTTON(ID_EXPORT_STATS, StatisticsPanel::OnExportStats)
 wxEND_EVENT_TABLE()
 
@@ -60,14 +59,12 @@ void StatisticsPanel::CreateDateControls()
                                            wxDP_DROPDOWN | wxDP_SHOWCENTURY);
 
     // Buttons
-    m_generateBtn = new wxButton(this, ID_GENERATE_STATS, "Generate Report");
     m_exportBtn = new wxButton(this, ID_EXPORT_STATS, "Export");
 
     m_dateSizer->Add(startLabel, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
     m_dateSizer->Add(m_startDatePicker, 0, wxRIGHT, 15);
     m_dateSizer->Add(endLabel, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
     m_dateSizer->Add(m_endDatePicker, 0, wxRIGHT, 15);
-    m_dateSizer->Add(m_generateBtn, 0, wxRIGHT, 5);
     m_dateSizer->Add(m_exportBtn, 0);
 }
 
@@ -124,11 +121,6 @@ void StatisticsPanel::CreateDetailsPanel()
 void StatisticsPanel::BindEvents()
 {
     // Events are bound through the event table
-}
-
-void StatisticsPanel::OnGenerateStats(wxCommandEvent &event)
-{
-    GenerateStatistics();
 }
 
 void StatisticsPanel::OnExportStats(wxCommandEvent &event)

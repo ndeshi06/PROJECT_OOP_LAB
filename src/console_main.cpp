@@ -188,7 +188,7 @@ private:
     }
     
     void handleRegister() {
-        std::string name, email, password;
+        std::string name, email, password, phone;
         
         std::cout << "\n=== REGISTER ===\n";
         std::cout << "Full Name: ";
@@ -197,12 +197,14 @@ private:
         std::getline(std::cin, email);
         std::cout << "Password: ";
         std::getline(std::cin, password);
+        std::cout << "Phone Number: ";
+        std::getline(std::cin, phone);
         
-        // Default role is CUSTOMER, phone is empty
+        // Default role is CUSTOMER
         UserRole role = UserRole::CUSTOMER;
         
         // Call registerUser with correct parameter order: email, password, fullName, phoneNumber, role
-        if (m_authController->registerUser(email, password, name, "", role)) {
+        if (m_authController->registerUser(email, password, name, phone, role)) {
             std::cout << "Registration successful! You can now login with your credentials.\n";
         } else {
             std::cout << "Registration failed! Email may already exist or validation failed.\n";
@@ -464,10 +466,27 @@ private:
             return;
         }
         
-        std::cout << "Enter hour (0-23): ";
+        std::cout << "Enter hour (6-22, where 6=6AM, 22=10PM): ";
         std::cin >> hour;
+        
+        // Validate hour is within allowed range (6AM to 10PM)
+        if (hour < 6 || hour > 22) {
+            std::cout << "Invalid hour! Bookings are only allowed from 6AM (6) to 10PM (22).\n";
+            pauseScreen();
+            return;
+        }
+        
         std::cout << "Enter duration (hours): ";
         std::cin >> duration;
+        
+        // Validate that booking doesn't extend beyond 10PM
+        if (hour + duration > 22) {
+            std::cout << "Invalid duration! Booking cannot extend beyond 10PM (22:00).\n";
+            std::cout << "Maximum duration for hour " << hour << " is " << (22 - hour) << " hours.\n";
+            pauseScreen();
+            return;
+        }
+        
         std::cin.ignore(); // Clear input buffer
         
         // Create booking for specified date and time
