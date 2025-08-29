@@ -89,16 +89,15 @@ void BookingPanel::CreateBookingForm()
     helpText->SetForegroundColour(wxColour(100, 100, 100));
     formGrid->Add(helpText, 0, wxALIGN_LEFT);
 
-    // Set default time values
-    wxDateTime now = wxDateTime::Now();
-    wxDateTime defaultStart = now;
+    // Set default time values to 6:00 AM - 8:00 AM
+    wxDateTime defaultStart = wxDateTime::Now();
+    defaultStart.SetHour(6);
     defaultStart.SetMinute(0);
     defaultStart.SetSecond(0);
-    if (now.GetMinute() > 0)
-    {
-        defaultStart += wxTimeSpan::Hours(1);
-    }
-    wxDateTime defaultEnd = defaultStart + wxTimeSpan::Hours(2);
+    wxDateTime defaultEnd = defaultStart;
+    defaultEnd.SetHour(8);
+    defaultEnd.SetMinute(0);
+    defaultEnd.SetSecond(0);
 
     m_startTimePicker->SetValue(defaultStart);
     m_endTimePicker->SetValue(defaultEnd);
@@ -1094,6 +1093,31 @@ bool BookingPanel::ValidateBookingInput()
 
     wxDateTime startTime = m_startTimePicker->GetValue();
     wxDateTime endTime = m_endTimePicker->GetValue();
+
+    // Check if times are within allowed hours (6AM to 10PM)
+    int startHour = startTime.GetHour();
+    int endHour = endTime.GetHour();
+    int endMinute = endTime.GetMinute();
+    
+    if (startHour < 6 || startHour >= 22)
+    {
+        wxMessageBox("Invalid start time!\n\n"
+                     "Bookings are only allowed from 6:00 AM to 10:00 PM.\n"
+                     "Please select a start time between 6:00 AM and 9:00 PM.",
+                     "Time Restriction",
+                     wxOK | wxICON_WARNING, this);
+        return false;
+    }
+    
+    if (endHour > 22 || (endHour == 22 && endMinute > 0))
+    {
+        wxMessageBox("Invalid end time!\n\n"
+                     "Bookings must end by 10:00 PM.\n"
+                     "Please select an earlier end time.",
+                     "Time Restriction",
+                     wxOK | wxICON_WARNING, this);
+        return false;
+    }
 
     // Compare just the time parts
     int startMinutes = startTime.GetHour() * 60 + startTime.GetMinute();

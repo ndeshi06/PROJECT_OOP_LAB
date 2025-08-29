@@ -68,7 +68,7 @@ void AdminPanel::CreateFilterControls()
     m_endDatePicker = new wxDatePickerCtrl(this, ID_END_DATE_PICKER, wxDefaultDateTime,
                                            wxDefaultPosition, wxDefaultSize,
                                            wxDP_DROPDOWN | wxDP_SHOWCENTURY);
-    m_endDatePicker->SetValue(wxDateTime::Now());
+    m_endDatePicker->SetValue(wxDateTime(1, wxDateTime::Jan, 2026));
     filterSizer->Add(m_endDatePicker, 0, wxRIGHT, 10);
 
     // Court filter

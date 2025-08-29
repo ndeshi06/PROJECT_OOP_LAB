@@ -73,9 +73,9 @@ for f in BookingManager NotificationObserver; do
 done
 
 # Utils
-# for f in Database DateTimeUtils; do
-#     compile_file "$SRC_DIR/utils/$f.cpp" "$OBJ_DIR/$f.o"
-# done
+for f in Database DateTimeUtils; do
+    compile_file "$SRC_DIR/utils/$f.cpp" "$OBJ_DIR/$f.o"
+done
 
 # Views
 for f in LoginFrame MainFrame CourtManagementPanel BookingPanel StatisticsPanel RegisterDialog UserManagementPanel AdminPanel; do
