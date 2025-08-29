@@ -41,6 +41,17 @@ LoginFrame::LoginFrame(AuthController* authController,
     CreateUI();
     CreateMenuBar();
     BindEvents();
+    
+    // Force multiple layout passes to ensure everything is properly calculated
+    Layout();
+    m_mainPanel->Layout();
+    m_mainSizer->Layout();
+    
+    // Set standard login window size
+    SetSize(wxSize(600, 450));
+    SetMinSize(wxSize(500, 400));
+    
+    // Center the window
     Center();
 }
 
@@ -54,22 +65,53 @@ void LoginFrame::CreateUI()
     // Create main sizer
     m_mainSizer = new wxBoxSizer(wxVERTICAL);
 
-    // Thêm ảnh vào login frame
-    wxImage::AddHandler(new wxPNGHandler);
+    // Add image handler
+    if (!wxImage::FindHandler(wxBITMAP_TYPE_PNG)) {
+        wxImage::AddHandler(new wxPNGHandler);
+    }
 
-    m_imgNormalOriginal.LoadFile("../images/normal.png", wxBITMAP_TYPE_PNG);
-    m_imgFocusOriginal.LoadFile("../images/focus.png", wxBITMAP_TYPE_PNG);
+    // Try to load images from multiple possible locations
+    wxString imagePaths[] = {
+        "images/normal.png",
+        "../images/normal.png", 
+        "../../images/normal.png",
+        "src/images/normal.png"
+    };
+    
+    bool normalImageLoaded = false;
+    bool focusImageLoaded = false;
+    
+    for (const wxString& path : imagePaths) {
+        wxString normalPath = path;
+        wxString focusPath = path;
+        focusPath.Replace("normal.png", "focus.png");
+        
+        if (wxFileExists(normalPath) && wxFileExists(focusPath)) {
+            normalImageLoaded = m_imgNormalOriginal.LoadFile(normalPath, wxBITMAP_TYPE_PNG);
+            focusImageLoaded = m_imgFocusOriginal.LoadFile(focusPath, wxBITMAP_TYPE_PNG);
+            if (normalImageLoaded && focusImageLoaded) {
+                break;
+            }
+        }
+    }
 
-    m_imgNormal = new wxStaticBitmap(m_mainPanel, wxID_ANY,
-        wxBitmap(m_imgNormalOriginal), wxDefaultPosition, wxDefaultSize);
-    m_imgFocus = new wxStaticBitmap(m_mainPanel, wxID_ANY,
-        wxBitmap(m_imgFocusOriginal), wxDefaultPosition, wxDefaultSize);
+    // Only create image controls if images loaded successfully
+    if (normalImageLoaded && focusImageLoaded) {
+        m_imgNormal = new wxStaticBitmap(m_mainPanel, wxID_ANY,
+            wxBitmap(m_imgNormalOriginal), wxDefaultPosition, wxDefaultSize);
+        m_imgFocus = new wxStaticBitmap(m_mainPanel, wxID_ANY,
+            wxBitmap(m_imgFocusOriginal), wxDefaultPosition, wxDefaultSize);
 
-    m_imgFocus->Hide();
+        m_imgFocus->Hide();
 
-    // Thêm ảnh vào sizer, căn giữa
-    m_mainSizer->Add(m_imgNormal, 0, wxALIGN_CENTER | wxTOP | wxBOTTOM, 10);
-    m_mainSizer->Add(m_imgFocus, 0, wxALIGN_CENTER | wxTOP | wxBOTTOM, 10);
+        // Thêm ảnh vào sizer, căn giữa
+        m_mainSizer->Add(m_imgNormal, 0, wxALIGN_CENTER | wxTOP | wxBOTTOM, 10);
+        m_mainSizer->Add(m_imgFocus, 0, wxALIGN_CENTER | wxTOP | wxBOTTOM, 10);
+    } else {
+        // If images can't be loaded, set pointers to null
+        m_imgNormal = nullptr;
+        m_imgFocus = nullptr;
+    }
 
     // Create title
     wxStaticText *titleLabel = new wxStaticText(m_mainPanel, wxID_ANY,
@@ -126,7 +168,18 @@ void LoginFrame::CreateUI()
     m_statusLabel->SetForegroundColour(*wxRED);
     m_mainSizer->Add(m_statusLabel, 0, wxALIGN_CENTER | wxALL, 5);
 
+    // Set the sizer for the main panel
     m_mainPanel->SetSizer(m_mainSizer);
+    
+    // Create a sizer for the frame itself to properly manage the panel
+    wxBoxSizer* frameSizer = new wxBoxSizer(wxVERTICAL);
+    frameSizer->Add(m_mainPanel, 1, wxEXPAND);
+    SetSizer(frameSizer);
+    
+    // Force initial layout calculation
+    m_mainSizer->Layout();
+    m_mainPanel->Layout();
+    Layout();
 
     // Set focus to email field
     m_emailCtrl->SetFocus();
@@ -339,38 +392,45 @@ void LoginFrame::OpenMainWindow()
 
 void LoginFrame::OnPasswordFocus(wxFocusEvent& event)
 {
-    m_imgNormal->Hide();
-    m_imgFocus->Show();
-    m_mainPanel->Layout();
+    if (m_imgNormal && m_imgFocus) {
+        m_imgNormal->Hide();
+        m_imgFocus->Show();
+        m_mainPanel->Layout();
+    }
     event.Skip();
 }
 
 void LoginFrame::OnPasswordKillFocus(wxFocusEvent& event)
 {
-    m_imgFocus->Hide();
-    m_imgNormal->Show();
-    m_mainPanel->Layout();
+    if (m_imgNormal && m_imgFocus) {
+        m_imgFocus->Hide();
+        m_imgNormal->Show();
+        m_mainPanel->Layout();
+    }
     event.Skip();
 }
 
 void LoginFrame::OnResize(wxSizeEvent& event)
 {
-    wxSize size = GetClientSize();
+    // Only resize images if they exist
+    if (m_imgNormal && m_imgFocus && m_imgNormalOriginal.IsOk() && m_imgFocusOriginal.IsOk()) {
+        wxSize size = GetClientSize();
 
-    // Giới hạn chiều rộng ảnh = 20% chiều rộng cửa sổ
-    int targetWidth = std::min(1.0 * m_imgNormalOriginal.GetWidth(),
-                               size.GetWidth() * 0.2);
-    // Giữ tỉ lệ
-    int targetHeight = m_imgNormalOriginal.GetHeight() *
-                       targetWidth / m_imgNormalOriginal.GetWidth();
+        // Giới hạn chiều rộng ảnh = 20% chiều rộng cửa sổ
+        int targetWidth = std::min(1.0 * m_imgNormalOriginal.GetWidth(),
+                                   size.GetWidth() * 0.2);
+        // Giữ tỉ lệ
+        int targetHeight = m_imgNormalOriginal.GetHeight() *
+                           targetWidth / m_imgNormalOriginal.GetWidth();
 
-    // Scale ảnh thường
-    wxImage scaledNormal = m_imgNormalOriginal.Scale(targetWidth, targetHeight, wxIMAGE_QUALITY_HIGH);
-    m_imgNormal->SetBitmap(wxBitmap(scaledNormal));
+        // Scale ảnh thường
+        wxImage scaledNormal = m_imgNormalOriginal.Scale(targetWidth, targetHeight, wxIMAGE_QUALITY_HIGH);
+        m_imgNormal->SetBitmap(wxBitmap(scaledNormal));
 
-    // Scale ảnh focus
-    wxImage scaledFocus = m_imgFocusOriginal.Scale(targetWidth, targetHeight, wxIMAGE_QUALITY_HIGH);
-    m_imgFocus->SetBitmap(wxBitmap(scaledFocus));
+        // Scale ảnh focus
+        wxImage scaledFocus = m_imgFocusOriginal.Scale(targetWidth, targetHeight, wxIMAGE_QUALITY_HIGH);
+        m_imgFocus->SetBitmap(wxBitmap(scaledFocus));
+    }
 
     Layout(); // update sizer
     event.Skip(); // tiếp tục xử lý sự kiện resize

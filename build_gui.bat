@@ -107,8 +107,8 @@ if %ERRORLEVEL% neq 0 goto :error
 
 :: Compile utilities
 echo Compiling utilities...
-@REM g++ %CXX_FLAGS% %INCLUDE_FLAGS% %WX_CXXFLAGS% -c %SRC_DIR%\utils\Database.cpp -o %OBJ_DIR%\Database.o
-@REM if %ERRORLEVEL% neq 0 goto :error
+g++ %CXX_FLAGS% %INCLUDE_FLAGS% %WX_CXXFLAGS% -c %SRC_DIR%\utils\Database.cpp -o %OBJ_DIR%\Database.o
+if %ERRORLEVEL% neq 0 goto :error
 
 g++ %CXX_FLAGS% %INCLUDE_FLAGS% %WX_CXXFLAGS% -c %SRC_DIR%\utils\DateTimeUtils.cpp -o %OBJ_DIR%\DateTimeUtils.o
 if %ERRORLEVEL% neq 0 goto :error
