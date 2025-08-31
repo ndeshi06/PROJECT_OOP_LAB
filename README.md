@@ -85,15 +85,7 @@ cd PROJECT_OOP_LAB
   - Install build tools:
   ```bash
   sudo apt update
-  sudo apt install build-essential libpcre2-dev
-  ```
-2. **Build wxWidgets (not required, already built by the author):**
-  > ⚠️ **Note:** You can skip this step because wxWidgets is already pre-built in the project folder. **Only perform this if you encounter errors related to the wxWidgets library or if you want to rebuild wxWidgets yourself.**
-  ```bash
-  cd wxWidgets-3.2.8
-  ./configure --enable-unicode --disable-shared --enable-static
-  make -j4
-  cd ..
+  sudo apt install build-essential libpcre2-dev libwxgtk3.2-dev
   ```
 3. **Build the Application:**
   ```bash
