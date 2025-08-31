@@ -212,8 +212,9 @@ PROJECT_OOP_LAB/
 ├── dll/                     # DLL files (for Windows)
 ├── wxWidgets-3.2.8/         # wxWidgets framework
 ├── build_gui.bat            # Main GUI build script for Windows
-├── build_console.bat        # Optional console build script
-├── build_gui.sh             # GUI build script (cross-platform)
+├── build_console.bat        # Optional console build script (Windows)
+├── build_console.sh         # Optional console build script (Linux/macOS)
+├── build_gui.sh             # GUI build script (Windows)
 ├── build_gui_linux.sh       # GUI build script for Linux
 ├── build_gui_mac.sh         # GUI build script for macOS
 └── README.md                # This file
