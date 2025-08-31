@@ -87,12 +87,12 @@ cd PROJECT_OOP_LAB
   sudo apt update
   sudo apt install build-essential libpcre2-dev libwxgtk3.2-dev
   ```
-3. **Build the Application:**
+2. **Build the Application:**
   ```bash
   chmod +x build_gui_linux.sh
   ./build_gui_linux.sh
   ```
-4. **Run the Application:**
+3. **Run the Application:**
   ```bash
   cd build
   ./BadmintonCourtManagerGUI
