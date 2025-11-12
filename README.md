@@ -2,7 +2,7 @@
 
 A comprehensive desktop application for managing badminton court facilities, built with C++ and wxWidgets. This system provides complete functionality for court management, user administration, booking management, and detailed analytics.
 
-## 🏸 Features
+## Features
 
 ### Core Functionality
 - **User Management**: Admin and regular user roles with authentication
@@ -27,7 +27,7 @@ A comprehensive desktop application for managing badminton court facilities, bui
 - **Revenue Analytics**: Daily, weekly, and monthly revenue reports
 - **Court Utilization**: Usage statistics and performance metrics
 
-## 🛠️ Technical Architecture
+## Technical Architecture
 
 ### Design Patterns
 - **MVC Architecture**: Clean separation of Model, View, and Controller
@@ -41,7 +41,7 @@ A comprehensive desktop application for managing badminton court facilities, bui
 - **Platform**: Windows, Linux, macOS (cross-platform, Apple Silicon & Intel supported)
 - **Build System**: Custom shell script with g++
 
-## 📋 Prerequisites
+## Prerequisites
 
 ### System Requirements
 - Windows 10 or later / Ubuntu 20.04+ or other modern Linux / macOS 11.0 or later
@@ -56,7 +56,7 @@ A comprehensive desktop application for managing badminton court facilities, bui
 - Standard C++ libraries
 
 
-## 🚀 Installation & Setup
+## Installation & Setup
 
 ### 1. Clone the Repository (All Platforms)
 ```bash
@@ -66,7 +66,7 @@ cd PROJECT_OOP_LAB
 
 ---
 
-### 🪟 Windows
+### Windows
 1. **Install Dependencies:**
   - Download and install [wxWidgets 3.2.8](https://www.wxwidgets.org/downloads/) (not required, already included in the project folder).
    - Ensure you have a C++ compiler (MinGW recommended).
@@ -80,7 +80,7 @@ cd PROJECT_OOP_LAB
 
 ---
 
-### 🐧 Linux
+### Linux
 1. **Install Dependencies:**
   - Install build tools:
   ```bash
@@ -100,7 +100,7 @@ cd PROJECT_OOP_LAB
 
 ---
 
-### 🍏 macOS
+### macOS
 1. **Install Dependencies:**
    - Install [Homebrew](https://brew.sh/) if not already installed:
   ```bash
@@ -108,7 +108,7 @@ cd PROJECT_OOP_LAB
   brew install pcre2
   ```
 2. **Build wxWidgets (not required, already built by the author):**
-  > ⚠️ **Note:** You can skip this step because wxWidgets is already pre-built in the project folder. **Only perform this if you encounter errors related to the wxWidgets library or if you want to rebuild wxWidgets yourself.**
+  > **Note:** You can skip this step because wxWidgets is already pre-built in the project folder. **Only perform this if you encounter errors related to the wxWidgets library or if you want to rebuild wxWidgets yourself.**
   ```bash
   cd wxWidgets-3.2.8
   ./configure --enable-unicode --disable-shared --enable-static --with-osx_cocoa
@@ -126,7 +126,7 @@ cd PROJECT_OOP_LAB
   ./BadmintonCourtManagerGUI
   ```
 
-## 📖 Usage Guide
+## Usage Guide
 
 ### Initial Setup
 1. **First Launch**: The system creates default admin user and sample courts
@@ -163,7 +163,7 @@ cd PROJECT_OOP_LAB
 - Export data to CSV format for external analysis
 - View revenue trends and court utilization metrics
 
-## 💻 Alternative Console Interface
+## Alternative Console Interface
 
 For users who prefer command-line interfaces or need to run the application in terminal environments, an optional console version is available.
 
@@ -195,7 +195,7 @@ The system supports comprehensive data export functionality:
 - Daily breakdown with detailed metrics
 - Usage rates and performance indicators
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 PROJECT_OOP_LAB/
@@ -220,7 +220,7 @@ PROJECT_OOP_LAB/
 └── README.md                # This file
 ```
 
-## 👥 Authors
+## Authors
   This application is developed by Group 8 - 24C06.
 ### Contributors
 - **Vo Nguyen Khoa** - *Feature development, code review* - [GitHub Profile](https://github.com/nguyenkhoa838)
