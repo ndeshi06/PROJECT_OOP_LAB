@@ -180,7 +180,7 @@ BadmintonCourtManagerConsole.exe
 
 The console interface provides the same core functionality as the GUI version through menu-driven navigation.
 
-## 📊 Data Export
+## Data Export
 
 The system supports comprehensive data export functionality:
 
